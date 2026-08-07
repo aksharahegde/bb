@@ -91,6 +91,7 @@ describe("official plugin registry invariants", () => {
       connect: "Host access",
       "custom-instructions": "Context & knowledge",
       decisions: "Context & knowledge",
+      "autonomous-backlog": "Workflow management",
       docs: "Context & knowledge",
       github: "Developer tools",
       "inline-vis": "Interface",

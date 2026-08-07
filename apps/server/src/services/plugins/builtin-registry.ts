@@ -132,6 +132,12 @@ export const OFFICIAL_PLUGINS = [
     defaultEnabled: true,
     category: "Context & knowledge",
   },
+  {
+    name: "autonomous-backlog",
+    pluginId: "autonomous-backlog",
+    defaultEnabled: true,
+    category: "Workflow management",
+  },
   // Replaces the standard sidebar, so users install it deliberately instead
   // of receiving a disabled registration by default.
   {
