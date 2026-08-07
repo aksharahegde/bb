@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createFakePluginHost, makeThreadResponse } from "@bb/plugin-sdk/testing";
 import plugin from "./server.js";
 
@@ -149,6 +149,110 @@ describe("agent-roster plugin", () => {
         usedPercent: 55,
       },
     });
+  });
+
+  it("rolls back agent state when thread spawn fails", async () => {
+    const { bb, harness, projectId } = createFileHarness();
+    harness.sdk.stub("threads.spawn", async () => {
+      throw new Error("spawn failed");
+    });
+    await plugin(bb);
+
+    const created = await harness.runCli(
+      [
+        "create",
+        "--name",
+        "Worker",
+        "--role",
+        "Debugger",
+        "--prompt",
+        "Work",
+        "--project",
+        projectId,
+        "--json",
+      ],
+      { projectId },
+    );
+    const agentId = (JSON.parse(created.stdout) as { agent: { id: string } })
+      .agent.id;
+
+    const agentsBefore = await harness.behavior.callRpc("listAgents", {
+      projectId,
+    });
+    const before = (
+      agentsBefore as {
+        agents: Array<{
+          id: string;
+          spatial_state: { status: string; zone: string };
+        }>;
+      }
+    ).agents.find((agent) => agent.id === agentId)!;
+
+    await expect(
+      harness.behavior.callRpc("invokeAgent", {
+        projectId,
+        agentId,
+        prompt: "Do the thing",
+      }),
+    ).rejects.toThrow("spawn failed");
+
+    const agentsAfter = await harness.behavior.callRpc("listAgents", {
+      projectId,
+    });
+    const after = (
+      agentsAfter as {
+        agents: Array<{
+          id: string;
+          spatial_state: { status: string; zone: string };
+          active_thread_id: string | null;
+        }>;
+      }
+    ).agents.find((agent) => agent.id === agentId)!;
+
+    expect(after.spatial_state.status).toBe(before.spatial_state.status);
+    expect(after.spatial_state.zone).toBe(before.spatial_state.zone);
+    expect(after.active_thread_id).toBeNull();
+  });
+
+  it("passes default_model when spawning a roster thread", async () => {
+    const { bb, harness, projectId } = createFileHarness();
+    harness.sdk.stub("threads.spawn", async () =>
+      makeThreadResponse({ id: "th_roster", projectId }),
+    );
+    await plugin(bb);
+
+    const created = await harness.runCli(
+      [
+        "create",
+        "--name",
+        "Worker",
+        "--role",
+        "Debugger",
+        "--prompt",
+        "Work",
+        "--model",
+        "composer-2.5-fast",
+        "--project",
+        projectId,
+        "--json",
+      ],
+      { projectId },
+    );
+    const agentId = (JSON.parse(created.stdout) as { agent: { id: string } })
+      .agent.id;
+
+    await harness.behavior.callRpc("invokeAgent", {
+      projectId,
+      agentId,
+      prompt: "Do the thing",
+    });
+
+    const spawnCall = harness.sdk.callsTo("threads.spawn")[0]?.[0] as
+      | { model?: string }
+      | undefined;
+    expect(spawnCall).toEqual(
+      expect.objectContaining({ model: "composer-2.5-fast" }),
+    );
   });
 
   it("invokes an agent and returns it to idle on thread.idle", async () => {

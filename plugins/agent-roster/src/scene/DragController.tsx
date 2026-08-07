@@ -30,7 +30,7 @@ export function DragController({
   onMoveAgent: (agentId: string, x: number, y: number) => void;
 }) {
   const { camera, gl } = useThree();
-  const { registerStartDrag } = useDragApi();
+  const { registerStartDrag, setDraggingAgentId } = useDragApi();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [previewSlot, setPreviewSlot] = useState<FurnitureSlot | null>(null);
   const [slotValid, setSlotValid] = useState(true);
@@ -47,9 +47,10 @@ export function DragController({
         return;
       }
       setDraggingId(agentId);
+      setDraggingAgentId(agentId);
       gl.domElement.style.cursor = "grabbing";
     });
-  }, [agents, gl.domElement, registerStartDrag]);
+  }, [agents, gl.domElement, registerStartDrag, setDraggingAgentId]);
 
   useEffect(() => {
     if (!draggingId) return;
@@ -80,6 +81,7 @@ export function DragController({
         onMoveAgent(draggingId, previewSlot.gridX, previewSlot.gridY);
       }
       setDraggingId(null);
+      setDraggingAgentId(null);
       setPreviewSlot(null);
       gl.domElement.style.cursor = "auto";
     };
@@ -100,6 +102,7 @@ export function DragController({
     camera,
     gl.domElement,
     onMoveAgent,
+    setDraggingAgentId,
   ]);
 
   if (!draggingId) return null;

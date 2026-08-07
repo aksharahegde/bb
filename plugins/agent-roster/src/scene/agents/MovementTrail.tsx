@@ -1,7 +1,13 @@
-import { Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState, type RefObject } from "react";
-import { Vector3, type Group } from "three";
+import { useMemo, type RefObject } from "react";
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Line,
+  LineDashedMaterial,
+  Vector3,
+  type Group,
+} from "three";
 import type { SceneTheme } from "../hooks/useSceneTheme.js";
 
 export function MovementTrail({
@@ -12,49 +18,62 @@ export function MovementTrail({
   reducedMotion,
 }: {
   groupRef: RefObject<Group | null>;
-  destination: React.RefObject<Vector3>;
+  destination: RefObject<Vector3>;
   theme: SceneTheme;
   enabled: boolean;
   reducedMotion: boolean;
 }) {
-  const [segment, setSegment] = useState<
-    [[number, number, number], [number, number, number]] | null
-  >(null);
-  const lastVisible = useRef(false);
+  const positions = useMemo(() => new Float32Array(6), []);
+  const color = useMemo(
+    () => `#${theme.muted.getHexString()}`,
+    [theme.muted],
+  );
+  const line = useMemo(() => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(positions, 3));
+    const material = new LineDashedMaterial({
+      color,
+      transparent: true,
+      opacity: 0.65,
+      dashSize: 0.25,
+      gapSize: 0.15,
+    });
+    const trail = new Line(geometry, material);
+    trail.frustumCulled = false;
+    trail.visible = false;
+    trail.computeLineDistances();
+    return trail;
+  }, [color, positions]);
 
   useFrame(() => {
     if (!enabled || reducedMotion) {
-      if (lastVisible.current) setSegment(null);
-      lastVisible.current = false;
+      line.visible = false;
       return;
     }
+
     const group = groupRef.current;
     if (!group) return;
+
     const distance = group.position.distanceTo(destination.current);
     if (distance < 0.12) {
-      if (lastVisible.current) setSegment(null);
-      lastVisible.current = false;
+      line.visible = false;
       return;
     }
-    lastVisible.current = true;
-    setSegment([
-      [group.position.x, 0.06, group.position.z],
-      [destination.current.x, 0.06, destination.current.z],
-    ]);
+
+    const position = line.geometry.getAttribute("position") as BufferAttribute;
+    position.setXYZ(0, group.position.x, 0.06, group.position.z);
+    position.setXYZ(
+      1,
+      destination.current.x,
+      0.06,
+      destination.current.z,
+    );
+    position.needsUpdate = true;
+    line.computeLineDistances();
+    line.visible = true;
   });
 
-  if (!segment) return null;
+  if (!enabled || reducedMotion) return null;
 
-  return (
-    <Line
-      points={segment}
-      color={`#${theme.muted.getHexString()}`}
-      lineWidth={1}
-      dashed
-      dashSize={0.25}
-      gapSize={0.15}
-      transparent
-      opacity={0.65}
-    />
-  );
+  return <primitive object={line} />;
 }

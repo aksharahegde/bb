@@ -1,12 +1,10 @@
-import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useState } from "react";
 import type { RosterAgent } from "../../types.js";
+import { ProceduralAgentAvatar } from "../characters/ProceduralAgentAvatar.js";
 import { useDragApi } from "../DragContext.js";
 import { Workstation } from "../furniture/Workstation.js";
 import type { SceneTheme } from "../hooks/useSceneTheme.js";
-import { AgentAvatar } from "./AgentAvatar.js";
-import { AgentNameplate } from "./AgentNameplate.js";
 import { AgentSpeechBubble } from "./AgentSpeechBubble.js";
 import { AgentStatusEffects } from "./AgentStatusEffects.js";
 import { StatusParticles } from "./StatusParticles.js";
@@ -29,11 +27,12 @@ export function AgentStation({
   onFocus: (agent: RosterAgent) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const { startDrag } = useDragApi();
+  const { startDrag, draggingAgentId } = useDragApi();
   const status = agent.spatial_state.status;
   const dimmed = status === "offline";
   const draggable =
     status !== "working" && status !== "thinking";
+  const isMoving = draggingAgentId === agent.id;
 
   const handleClick = (event: ThreeEvent<MouseEvent>): void => {
     event.stopPropagation();
@@ -60,7 +59,14 @@ export function AgentStation({
         dimmed={dimmed}
       />
       {!dimmed ? (
-        <AgentAvatar avatar={agent.avatar} role={agent.role} theme={theme} />
+        <ProceduralAgentAvatar
+          avatar={agent.avatar}
+          role={agent.role}
+          theme={theme}
+          status={status}
+          reducedMotion={reducedMotion}
+          isMoving={isMoving}
+        />
       ) : null}
       {showParticles && !dimmed ? (
         <StatusParticles
@@ -69,15 +75,11 @@ export function AgentStation({
           reducedMotion={reducedMotion}
         />
       ) : null}
-      <AgentNameplate
-        name={agent.name}
-        role={agent.role}
-        visible={hovered || selected}
-      />
       <AgentStatusEffects
         theme={theme}
         status={status}
         selected={selected}
+        hovered={hovered}
         reducedMotion={reducedMotion}
       />
       {agent.speech_bubble ? (
@@ -101,14 +103,6 @@ export function AgentStation({
         <boxGeometry args={[1.5, 1.8, 1.2]} />
         <meshBasicMaterial visible={false} />
       </mesh>
-      <Html transform position={[0, 0.05, 0]} style={{ pointerEvents: "none" }}>
-        <span
-          data-testid={`roster-agent-sprite-${agent.id}`}
-          className="sr-only"
-        >
-          {agent.name}
-        </span>
-      </Html>
     </group>
   );
 }

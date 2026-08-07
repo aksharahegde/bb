@@ -13,7 +13,7 @@ function makeAgent(
     id: "agent-a",
     name: "Agent A",
     role: "Debugger",
-    avatar: "🤖",
+    avatar: "default-m",
     system_prompt: "test",
     allowed_tools: ["read_file"],
     default_model: "claude-sonnet-5-thinking-high",

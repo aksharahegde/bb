@@ -10,6 +10,8 @@ import {
 } from "@bb/shared-ui/select";
 import { cn } from "@bb/shared-ui/lib/utils";
 import type { AgentStatus, RosterAgent, RosterEvent } from "../types.js";
+import { getCharacterPreset } from "../scene/characters/presets.js";
+import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
 import { useActiveDuration } from "./AgentFlyout.js";
 
 type StatusFilter = AgentStatus | "all";
@@ -68,57 +70,60 @@ function AgentRosterCard({
     agent.spatial_state.status === "thinking";
 
   return (
-    <button
-      type="button"
+    <div
       className={cn(
-        "w-full rounded-lg border p-3 text-left transition-colors",
+        "w-full rounded-lg border p-3",
         selected
           ? "border-primary/40 bg-primary/5"
-          : "border-border hover:bg-muted/40",
+          : "border-border",
       )}
-      onClick={onSelect}
       data-testid={`roster-sidebar-row-${agent.id}`}
     >
-      <div className="flex items-start gap-2">
-        <span className="text-xl">{agent.avatar}</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="truncate font-medium">{agent.name}</div>
-            <Badge
-              variant="outline"
-              className={cn(
-                "shrink-0 text-[9px] capitalize",
-                statusPillClass(agent.spatial_state.status),
-              )}
-            >
-              {agent.spatial_state.status}
-            </Badge>
+      <button
+        type="button"
+        className="w-full text-left transition-colors hover:opacity-90"
+        onClick={onSelect}
+      >
+        <div className="flex items-start gap-2">
+          <div className="h-10 w-8 shrink-0 overflow-hidden rounded bg-muted/40">
+            <CharacterPresetSilhouette preset={getCharacterPreset(agent.avatar)} />
           </div>
-          <div className="truncate text-[10px] text-muted-foreground">
-            {agent.role} · {zoneLabel(agent.spatial_state.zone)}
-          </div>
-          {isActive && duration ? (
-            <div className="mt-1 text-[10px] tabular-nums text-success">
-              Running {duration}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="truncate font-medium">{agent.name}</div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "shrink-0 text-[9px] capitalize",
+                  statusPillClass(agent.spatial_state.status),
+                )}
+              >
+                {agent.spatial_state.status}
+              </Badge>
             </div>
-          ) : null}
+            <div className="truncate text-[10px] text-muted-foreground">
+              {agent.role} · {zoneLabel(agent.spatial_state.zone)}
+            </div>
+            {isActive && duration ? (
+              <div className="mt-1 text-[10px] tabular-nums text-success">
+                Running {duration}
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </button>
       <div className="mt-2 flex justify-end">
         <Button
           size="sm"
           variant="outline"
           disabled={agent.spatial_state.status === "offline"}
-          onClick={(event) => {
-            event.stopPropagation();
-            onInvoke();
-          }}
-          data-testid="roster-quick-invoke"
+          onClick={() => onInvoke()}
+          data-testid={`roster-quick-invoke-${agent.id}`}
         >
           Invoke
         </Button>
       </div>
-    </button>
+    </div>
   );
 }
 

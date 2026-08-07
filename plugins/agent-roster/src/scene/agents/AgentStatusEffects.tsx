@@ -9,11 +9,13 @@ export function AgentStatusEffects({
   theme,
   status,
   selected,
+  hovered,
   reducedMotion,
 }: {
   theme: SceneTheme;
   status: AgentStatus;
   selected: boolean;
+  hovered: boolean;
   reducedMotion: boolean;
 }) {
   const ringRef = useRef<Mesh>(null);
@@ -34,7 +36,7 @@ export function AgentStatusEffects({
       0.35 + Math.sin(state.clock.elapsedTime * 2.5) * 0.15;
   });
 
-  if (!ringColor && !selected) return null;
+  if (!ringColor && !selected && !hovered) return null;
 
   return (
     <group>
@@ -45,6 +47,17 @@ export function AgentStatusEffects({
             color={ringColor}
             transparent
             opacity={0.55}
+            depthWrite={false}
+          />
+        </mesh>
+      ) : null}
+      {hovered && !selected ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]}>
+          <ringGeometry args={[0.58, 0.68, 32]} />
+          <meshBasicMaterial
+            color={`#${theme.primary.getHexString()}`}
+            transparent
+            opacity={0.45}
             depthWrite={false}
           />
         </mesh>

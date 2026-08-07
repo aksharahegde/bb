@@ -15,7 +15,7 @@ function makeAgent(
   return {
     name: overrides.id,
     role: "Debugger",
-    avatar: "🤖",
+    avatar: "default-m",
     system_prompt: "test",
     allowed_tools: [],
     default_model: "claude-sonnet-5-thinking-high",

@@ -38,8 +38,8 @@
       "default_model": "claude-sonnet-5-thinking-high",
       "spatial_state": {
         "zone": "desks",
-        "position_x": 4,
-        "position_y": 4,
+        "position_x": 7,
+        "position_y": 1,
         "status": "idle",
         "current_task_id": null
       },

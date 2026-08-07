@@ -219,7 +219,14 @@ export const rosterRpcContract = defineRpcContract({
     input: z.null(),
     output: z
       .object({
-        avatars: z.array(z.string()),
+        characterPresets: z.array(
+          z
+            .object({
+              id: z.string(),
+              label: z.string(),
+            })
+            .strict(),
+        ),
         tools: z.array(
           z.object({ id: z.string(), label: z.string() }).strict(),
         ),

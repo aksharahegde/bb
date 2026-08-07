@@ -1,4 +1,4 @@
-import { Html } from "@react-three/drei";
+import { SceneHtml } from "../SceneHtmlPortal.js";
 import type { UsageDisplay } from "../../usage-display.js";
 import type { SceneTheme } from "../hooks/useSceneTheme.js";
 
@@ -37,7 +37,7 @@ export function UsageMonitor({
           emissiveIntensity={0.4}
         />
       </mesh>
-      <Html
+      <SceneHtml
         transform
         position={[0, 0.05, 0.08]}
         distanceFactor={8}
@@ -47,7 +47,7 @@ export function UsageMonitor({
           <div>Token burn</div>
           <div className="tabular-nums">{label}</div>
         </div>
-      </Html>
+      </SceneHtml>
     </group>
   );
 }

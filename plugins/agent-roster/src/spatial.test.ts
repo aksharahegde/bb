@@ -11,7 +11,7 @@ function makeAgent(
 ): RosterAgent {
   return {
     role: "Debugger",
-    avatar: "🐛",
+    avatar: "debugger-m",
     system_prompt: "test",
     allowed_tools: [],
     default_model: "claude-sonnet-5-thinking-high",

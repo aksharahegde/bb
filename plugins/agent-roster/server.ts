@@ -14,7 +14,7 @@ import {
 import { RosterStore } from "./src/store.js";
 import { registerRosterCli } from "./src/cli.js";
 import { summarizeProviderUsage } from "./src/usage-display.js";
-import { AGENT_STATUSES } from "./src/types.js";
+import { AGENT_STATUSES, CHARACTER_PRESETS } from "./src/types.js";
 
 export { REALTIME_CHANNEL, rosterRpcContract } from "./contract.js";
 
@@ -68,54 +68,71 @@ export default async function plugin(bb: BbPluginApi) {
     parentThreadId?: string | null;
   }): Promise<{ threadId: string; agent: Awaited<ReturnType<RosterStore["readAgent"]>> }> {
     const agent = await store.readAgent(args.projectId, args.agentId);
-    await store.assignAgentToZone(
-      args.projectId,
-      args.agentId,
-      "testing_lab",
-    );
-    await store.updateAgentSpatial(
-      args.projectId,
-      args.agentId,
-      {
-        status: "working",
-        current_task_id: args.taskId ?? null,
-      },
-      {
-        active_thread_id: null,
-        speech_bubble: `Starting: ${args.prompt.slice(0, 80)}${args.prompt.length > 80 ? "…" : ""}`,
-      },
-    );
-    const title = `[Roster] ${agent.name}: ${args.prompt.slice(0, 60)}`.slice(
-      0,
-      120,
-    );
-    const thread = await bb.sdk.threads.spawn({
-      projectId: args.projectId,
-      environment: { type: "project-default" },
-      title,
-      prompt: buildInvokePrompt(agent, args.prompt, args.taskId),
-      visibility: "hidden",
-      ...(args.parentThreadId
-        ? { parentThreadId: args.parentThreadId }
-        : {}),
-    });
-    const updated = await store.updateAgentSpatial(
-      args.projectId,
-      args.agentId,
-      { status: "working" },
-      { active_thread_id: thread.id },
-    );
-    await store.appendEvent(args.projectId, {
-      message: `${agent.name} assigned to ${args.taskId ?? "ad-hoc task"}`,
-      agent_id: agent.id,
-    });
-    const agents = await store.listAgents(args.projectId);
-    const groups = await computeCollaborationGroups(bb, agents);
-    if (groups.length > 0) {
-      await store.syncCollaborationToConference(args.projectId, groups);
+    const priorSpatial = { ...agent.spatial_state };
+    const priorExtras = {
+      active_thread_id: agent.active_thread_id,
+      speech_bubble: agent.speech_bubble,
+    };
+
+    try {
+      await store.assignAgentToZone(
+        args.projectId,
+        args.agentId,
+        "testing_lab",
+      );
+      await store.updateAgentSpatial(
+        args.projectId,
+        args.agentId,
+        {
+          status: "working",
+          current_task_id: args.taskId ?? null,
+        },
+        {
+          active_thread_id: null,
+          speech_bubble: `Starting: ${args.prompt.slice(0, 80)}${args.prompt.length > 80 ? "…" : ""}`,
+        },
+      );
+      const title = `[Roster] ${agent.name}: ${args.prompt.slice(0, 60)}`.slice(
+        0,
+        120,
+      );
+      const thread = await bb.sdk.threads.spawn({
+        projectId: args.projectId,
+        environment: { type: "project-default" },
+        title,
+        prompt: buildInvokePrompt(agent, args.prompt, args.taskId),
+        visibility: "hidden",
+        ...(agent.default_model ? { model: agent.default_model } : {}),
+        ...(args.parentThreadId
+          ? { parentThreadId: args.parentThreadId }
+          : {}),
+      });
+      const updated = await store.updateAgentSpatial(
+        args.projectId,
+        args.agentId,
+        { status: "working" },
+        { active_thread_id: thread.id },
+      );
+      await store.appendEvent(args.projectId, {
+        message: `${agent.name} assigned to ${args.taskId ?? "ad-hoc task"}`,
+        agent_id: agent.id,
+      });
+      const agents = await store.listAgents(args.projectId);
+      const groups = await computeCollaborationGroups(bb, agents);
+      if (groups.length > 0) {
+        await store.syncCollaborationToConference(args.projectId, groups);
+      }
+      publishChanged(args.projectId);
+      return { threadId: thread.id, agent: updated };
+    } catch (error) {
+      await store.updateAgentSpatial(
+        args.projectId,
+        args.agentId,
+        priorSpatial,
+        priorExtras,
+      );
+      throw error;
     }
-    publishChanged(args.projectId);
-    return { threadId: thread.id, agent: updated };
   }
 
   async function refreshCollaboration(projectId: string): Promise<void> {
@@ -226,11 +243,12 @@ export default async function plugin(bb: BbPluginApi) {
       });
     },
     async getFormOptions() {
-      const { AVATAR_OPTIONS, MODEL_OPTIONS, TOOL_OPTIONS } = await import(
-        "./src/types.js"
-      );
+      const { MODEL_OPTIONS, TOOL_OPTIONS } = await import("./src/types.js");
       return {
-        avatars: [...AVATAR_OPTIONS],
+        characterPresets: CHARACTER_PRESETS.map((preset) => ({
+          id: preset.id,
+          label: preset.label,
+        })),
         tools: TOOL_OPTIONS.map((tool) => ({
           id: tool.id,
           label: tool.label,

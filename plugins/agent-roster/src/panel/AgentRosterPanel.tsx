@@ -39,6 +39,8 @@ import { CreateAgentDialog } from "./CreateAgentDialog.js";
 import { AgentFormDialog } from "./AgentFormDialog.js";
 import { LayoutEditorPanel } from "./LayoutEditorPanel.js";
 import { DEFAULT_OFFICE_LAYOUT } from "../spatial.js";
+import { getCharacterPreset } from "../scene/characters/presets.js";
+import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
 import type { UsageDisplay } from "../usage-display.js";
 import {
   DEFAULT_SCENE_SETTINGS,
@@ -140,6 +142,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   const [focusAgentId, setFocusAgentId] = useState<string | null>(null);
   const [usageDisplay, setUsageDisplay] = useState<UsageDisplay | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rosterReady, setRosterReady] = useState(false);
 
   const loadProjects = useCallback(async () => {
     const { projects: nextProjects } = await rpc.call("listProjects", null);
@@ -151,9 +154,15 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
     );
   }, [rpc, routeProjectId]);
 
+  useEffect(() => {
+    setRosterReady(false);
+    setLoading(true);
+  }, [project?.id, statusFilter]);
+
   const loadRoster = useCallback(async () => {
     if (!project) return;
-    setLoading(true);
+    const showBlockingLoad = !rosterReady;
+    if (showBlockingLoad) setLoading(true);
     try {
       const result = await rpc.call("listAgents", {
         projectId: project.id,
@@ -169,12 +178,13 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
           ? (result.agents.find((agent) => agent.id === current.id) ?? null)
           : null,
       );
+      setRosterReady(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
-  }, [rpc, project, statusFilter]);
+  }, [rpc, project, statusFilter, rosterReady]);
 
   useEffect(() => {
     void loadProjects();
@@ -458,8 +468,14 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
 
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-[7] p-4">
-          {loading ? (
-            <OfficeSceneSkeleton />
+          {!rosterReady && loading ? (
+            viewMode === "spatial" ? (
+              <OfficeSceneSkeleton />
+            ) : (
+              <div className="flex h-full min-h-[480px] items-center justify-center rounded-lg border border-border bg-card text-sm text-muted-foreground">
+                Loading roster…
+              </div>
+            )
           ) : viewMode === "spatial" && previewLayout ? (
             <div
               className="relative h-full min-h-[480px] overflow-hidden rounded-lg border border-border bg-card"
@@ -521,7 +537,11 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                   data-testid={`roster-row-${agent.id}`}
                   className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
                 >
-                  <span className="text-2xl">{agent.avatar}</span>
+                  <div className="h-10 w-8 shrink-0 overflow-hidden rounded bg-muted/40">
+                    <CharacterPresetSilhouette
+                      preset={getCharacterPreset(agent.avatar)}
+                    />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{agent.name}</div>
                     <div className="text-xs text-muted-foreground">

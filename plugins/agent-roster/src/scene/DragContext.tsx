@@ -3,10 +3,13 @@ import {
   useCallback,
   useContext,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 
 interface DragApi {
+  draggingAgentId: string | null;
+  setDraggingAgentId: (agentId: string | null) => void;
   startDrag: (agentId: string) => void;
   registerStartDrag: (handler: (agentId: string) => void) => () => void;
 }
@@ -15,6 +18,7 @@ const DragContext = createContext<DragApi | null>(null);
 
 export function DragProvider({ children }: { children: ReactNode }) {
   const startRef = useRef<((agentId: string) => void) | null>(null);
+  const [draggingAgentId, setDraggingAgentId] = useState<string | null>(null);
 
   const registerStartDrag = useCallback((handler: (agentId: string) => void) => {
     startRef.current = handler;
@@ -30,7 +34,9 @@ export function DragProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <DragContext.Provider value={{ startDrag, registerStartDrag }}>
+    <DragContext.Provider
+      value={{ draggingAgentId, setDraggingAgentId, startDrag, registerStartDrag }}
+    >
       {children}
     </DragContext.Provider>
   );

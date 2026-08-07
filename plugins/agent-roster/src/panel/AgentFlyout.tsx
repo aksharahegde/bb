@@ -20,6 +20,8 @@ import {
 } from "@bb/shared-ui/select";
 import { Textarea } from "@bb/shared-ui/textarea";
 import type { RosterAgent } from "../types.js";
+import { getCharacterPreset } from "../scene/characters/presets.js";
+import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
 import { isAgentActive } from "../lifecycle.js";
 
 const ZONE_OPTIONS = [
@@ -54,12 +56,14 @@ export function AgentFlyout({
 
   return (
     <div
-      className="absolute bottom-4 left-4 z-30 w-80 rounded-lg border border-border bg-popover p-4 shadow-lg"
+      className="pointer-events-auto absolute bottom-4 left-4 z-40 w-80 rounded-lg border border-border bg-popover p-4 shadow-lg"
       data-testid="roster-agent-flyout"
     >
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{agent.avatar}</span>
+          <div className="h-12 w-9 shrink-0 overflow-hidden rounded bg-muted/40">
+            <CharacterPresetSilhouette preset={getCharacterPreset(agent.avatar)} />
+          </div>
           <div>
             <div className="text-sm font-semibold">{agent.name}</div>
             <Badge variant="secondary" className="text-[10px]">

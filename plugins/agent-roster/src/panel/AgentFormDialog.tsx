@@ -21,6 +21,12 @@ import { Textarea } from "@bb/shared-ui/textarea";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { rosterRpcContract } from "../../contract.js";
 import { isAgentActive } from "../lifecycle.js";
+import {
+  CHARACTER_PRESETS,
+  DEFAULT_CHARACTER_PRESET,
+  type CharacterPresetId,
+} from "../types.js";
+import { CharacterPresetThumbnail } from "./CharacterPresetThumbnail.js";
 import type { RosterAgent } from "../types.js";
 
 export function AgentFormDialog({
@@ -41,11 +47,11 @@ export function AgentFormDialog({
   const [name, setName] = useState("");
   const [role, setRole] = useState("Debugger");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [avatar, setAvatar] = useState("🤖");
+  const [avatar, setAvatar] = useState<CharacterPresetId>(DEFAULT_CHARACTER_PRESET);
   const [model, setModel] = useState("claude-sonnet-5-thinking-high");
   const [tools, setTools] = useState<string[]>(["read_file"]);
   const [options, setOptions] = useState<{
-    avatars: string[];
+    characterPresets: { id: string; label: string }[];
     tools: { id: string; label: string }[];
     models: string[];
   } | null>(null);
@@ -63,7 +69,7 @@ export function AgentFormDialog({
       setName(agent.name);
       setRole(agent.role);
       setSystemPrompt(agent.system_prompt);
-      setAvatar(agent.avatar);
+      setAvatar(agent.avatar as CharacterPresetId);
       setModel(agent.default_model);
       setTools(agent.allowed_tools);
       return;
@@ -71,7 +77,7 @@ export function AgentFormDialog({
     setName("");
     setRole("Debugger");
     setSystemPrompt("");
-    setAvatar("🤖");
+    setAvatar(DEFAULT_CHARACTER_PRESET);
     setModel("claude-sonnet-5-thinking-high");
     setTools(["read_file"]);
   }, [open, agent]);
@@ -84,6 +90,8 @@ export function AgentFormDialog({
         : [...current, toolId],
     );
   };
+
+  const presetOptions = options?.characterPresets ?? CHARACTER_PRESETS;
 
   const handleSubmit = async (): Promise<void> => {
     setSubmitting(true);
@@ -171,24 +179,21 @@ export function AgentFormDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Avatar</label>
+            <label className="text-sm font-medium">Character</label>
             <div className="flex flex-wrap gap-2">
-              {(options?.avatars ?? ["🤖"]).map((entry) => (
-                <button
-                  key={entry}
-                  type="button"
-                  className={cn(
-                    "flex size-10 items-center justify-center rounded-md border text-xl",
-                    avatar === entry
-                      ? "border-primary bg-primary/10"
-                      : "border-border",
-                  )}
-                  onClick={() => setAvatar(entry)}
-                  data-testid={`roster-create-avatar-${entry}`}
-                >
-                  {entry}
-                </button>
-              ))}
+              {presetOptions.map((entry) => {
+                const preset =
+                  CHARACTER_PRESETS.find((item) => item.id === entry.id) ??
+                  CHARACTER_PRESETS[0]!;
+                return (
+                  <CharacterPresetThumbnail
+                    key={entry.id}
+                    preset={preset}
+                    selected={avatar === entry.id}
+                    onSelect={() => setAvatar(entry.id as CharacterPresetId)}
+                  />
+                );
+              })}
             </div>
           </div>
           <div className="space-y-2">

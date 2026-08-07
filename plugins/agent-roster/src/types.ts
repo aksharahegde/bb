@@ -106,18 +106,13 @@ export interface UpdateAgentInput {
   default_model: string;
 }
 
-export const AVATAR_OPTIONS = [
-  "🐛",
-  "🔧",
-  "📚",
-  "🥷",
-  "🔒",
-  "⚡",
-  "🧪",
-  "🎯",
-  "🤖",
-  "🦊",
-] as const;
+export type { CharacterPresetId } from "./scene/characters/presets.js";
+export {
+  CHARACTER_PRESET_IDS,
+  CHARACTER_PRESETS,
+  DEFAULT_CHARACTER_PRESET,
+} from "./scene/characters/presets.js";
+export { resolveCharacterPreset } from "./scene/characters/emoji-migration.js";
 
 export const TOOL_OPTIONS = [
   { id: "read_file", label: "File Read" },

@@ -15,6 +15,7 @@ import {
   assertAgentArchivable,
   assertToolChangesAllowed,
 } from "./lifecycle.js";
+import { resolveCharacterPreset } from "./scene/characters/emoji-migration.js";
 import { DEFAULT_OFFICE_LAYOUT, findAvailableDesk } from "./spatial.js";
 import { SEED_AGENTS } from "./seed.js";
 import type {
@@ -329,6 +330,7 @@ export class RosterStore {
       .filter((agent) => matchesFilters(agent, filters))
       .map((agent) => ({
         ...agent,
+        avatar: resolveCharacterPreset(agent.avatar),
         active_since: activeSince[agent.id] ?? null,
       }))
       .sort((left, right) => left.name.localeCompare(right.name));
@@ -395,7 +397,7 @@ export class RosterStore {
       id: nextAgentId(existing, input.name),
       name: input.name.trim(),
       role: input.role.trim(),
-      avatar: input.avatar,
+      avatar: resolveCharacterPreset(input.avatar),
       system_prompt: input.system_prompt.trim(),
       allowed_tools: input.allowed_tools,
       default_model:
@@ -434,7 +436,7 @@ export class RosterStore {
         name: input.name.trim(),
         role: input.role.trim(),
         system_prompt: input.system_prompt.trim(),
-        avatar: input.avatar,
+        avatar: resolveCharacterPreset(input.avatar),
         allowed_tools: input.allowed_tools,
         default_model: input.default_model.trim() || existing.default_model,
       };

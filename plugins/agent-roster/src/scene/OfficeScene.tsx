@@ -18,6 +18,7 @@ import { useSceneTheme } from "./hooks/useSceneTheme.js";
 import { OfficeCamera } from "./OfficeCamera.js";
 import { OfficeFloor, ZoneDecorations } from "./OfficeFloor.js";
 import { SceneLighting, useDayNightFactor } from "./SceneLighting.js";
+import { OfficeSceneShell } from "./SceneHtmlPortal.js";
 import type { SceneSettings } from "./scene-settings.js";
 
 export interface OfficeSceneProps {
@@ -85,13 +86,14 @@ export default function OfficeScene({
   }, [layout]);
 
   return (
-    <Canvas
-      shadows
-      dpr={[1, 1.5]}
-      className="h-full w-full"
-      gl={{ antialias: true }}
-      onPointerMissed={onDeselect}
-    >
+    <OfficeSceneShell>
+      <Canvas
+        shadows
+        dpr={[1, 1.5]}
+        className="h-full w-full"
+        gl={{ antialias: true }}
+        onPointerMissed={onDeselect}
+      >
       <color attach="background" args={[background]} />
       <OfficeCamera layout={layout} focusTarget={focusTarget} />
       <SceneLighting theme={theme} dayNightFactor={dayNightFactor} />
@@ -161,6 +163,7 @@ export default function OfficeScene({
           );
         })}
       </DragProvider>
-    </Canvas>
+      </Canvas>
+    </OfficeSceneShell>
   );
 }
