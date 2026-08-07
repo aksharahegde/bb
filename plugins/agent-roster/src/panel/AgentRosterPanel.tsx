@@ -37,6 +37,12 @@ import { OfficeSceneSkeleton } from "./OfficeSceneSkeleton.js";
 import { RosterSidebar } from "./RosterSidebar.js";
 import { CreateAgentDialog } from "./CreateAgentDialog.js";
 import { AgentFormDialog } from "./AgentFormDialog.js";
+import { LayoutEditorPanel } from "./LayoutEditorPanel.js";
+import { DEFAULT_OFFICE_LAYOUT } from "../spatial.js";
+import {
+  DEFAULT_SCENE_SETTINGS,
+  type SceneSettings,
+} from "../scene/scene-settings.js";
 
 const OfficeScene = lazy(() => import("../scene/OfficeScene.js"));
 
@@ -125,6 +131,12 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   const [selectedAgent, setSelectedAgent] = useState<RosterAgent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editAgent, setEditAgent] = useState<RosterAgent | null>(null);
+  const [layoutEditMode, setLayoutEditMode] = useState(false);
+  const [draftLayout, setDraftLayout] = useState<OfficeLayout | null>(null);
+  const [savingLayout, setSavingLayout] = useState(false);
+  const [sceneSettings, setSceneSettings] =
+    useState<SceneSettings>(DEFAULT_SCENE_SETTINGS);
+  const [focusAgentId, setFocusAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProjects = useCallback(async () => {
@@ -264,6 +276,47 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
     }
   };
 
+  const handleStartLayoutEdit = (): void => {
+    if (!layout) return;
+    setLayoutEditMode(true);
+    setDraftLayout(layout);
+    setSelectedAgent(null);
+  };
+
+  const handleCancelLayoutEdit = (): void => {
+    setLayoutEditMode(false);
+    setDraftLayout(null);
+  };
+
+  const handleResetLayoutDraft = (): void => {
+    setDraftLayout(DEFAULT_OFFICE_LAYOUT);
+  };
+
+  const handleSaveLayout = async (): Promise<void> => {
+    if (!project || !draftLayout) return;
+    setSavingLayout(true);
+    try {
+      const result = await rpc.call("saveOfficeLayout", {
+        projectId: project.id,
+        layout: draftLayout,
+      });
+      toast.success(
+        result.agentsRepositioned > 0
+          ? `Layout saved; repositioned ${result.agentsRepositioned} agent(s)`
+          : "Layout saved",
+      );
+      setLayoutEditMode(false);
+      setDraftLayout(null);
+      await loadRoster();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSavingLayout(false);
+    }
+  };
+
+  const previewLayout = layoutEditMode ? (draftLayout ?? layout) : layout;
+
   if (!project) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
@@ -296,7 +349,64 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
         <Badge variant="secondary" className="tabular-nums">
           Active: {metrics.active}/{metrics.total}
         </Badge>
+        {viewMode === "spatial" ? (
+          <div className="flex flex-wrap gap-1">
+            <Button
+              size="sm"
+              variant={sceneSettings.showZoneLabels ? "default" : "outline"}
+              onClick={() =>
+                setSceneSettings((current) => ({
+                  ...current,
+                  showZoneLabels: !current.showZoneLabels,
+                }))
+              }
+              data-testid="roster-scene-labels-toggle"
+            >
+              Labels
+            </Button>
+            <Button
+              size="sm"
+              variant={sceneSettings.showParticles ? "default" : "outline"}
+              onClick={() =>
+                setSceneSettings((current) => ({
+                  ...current,
+                  showParticles: !current.showParticles,
+                }))
+              }
+              data-testid="roster-scene-particles-toggle"
+            >
+              Particles
+            </Button>
+            <Button
+              size="sm"
+              variant={sceneSettings.showMovementTrails ? "default" : "outline"}
+              onClick={() =>
+                setSceneSettings((current) => ({
+                  ...current,
+                  showMovementTrails: !current.showMovementTrails,
+                }))
+              }
+              data-testid="roster-scene-trails-toggle"
+            >
+              Trails
+            </Button>
+          </div>
+        ) : null}
         <div className="ml-auto flex flex-wrap gap-2">
+          {viewMode === "spatial" ? (
+            <Button
+              size="sm"
+              variant={layoutEditMode ? "default" : "outline"}
+              onClick={() =>
+                layoutEditMode
+                  ? handleCancelLayoutEdit()
+                  : handleStartLayoutEdit()
+              }
+              data-testid="roster-edit-layout"
+            >
+              {layoutEditMode ? "Exit Layout Editor" : "Edit Layout"}
+            </Button>
+          ) : null}
           <Button
             size="sm"
             onClick={() => setCreateOpen(true)}
@@ -330,7 +440,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
         <div className="relative min-w-0 flex-[7] p-4">
           {loading ? (
             <OfficeSceneSkeleton />
-          ) : viewMode === "spatial" && layout ? (
+          ) : viewMode === "spatial" && previewLayout ? (
             <div
               className="relative h-full min-h-[480px] overflow-hidden rounded-lg border border-border bg-card"
               data-testid="roster-office-canvas"
@@ -340,11 +450,17 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
               <SceneErrorBoundary onFallback={() => setViewMode("list")}>
                 <Suspense fallback={<OfficeSceneSkeleton />}>
                   <OfficeScene
-                    layout={layout}
-                    agents={spatialAgents}
+                    layout={previewLayout}
+                    agents={layoutEditMode ? [] : spatialAgents}
                     collaborationGroups={collaborationGroups}
                     selectedAgentId={selectedAgent?.id ?? null}
-                    onSelectAgent={setSelectedAgent}
+                    focusAgentId={focusAgentId}
+                    sceneSettings={sceneSettings}
+                    onSelectAgent={(agent) => {
+                      setSelectedAgent(agent);
+                      setFocusAgentId(agent.id);
+                    }}
+                    onFocusAgent={(agent) => setFocusAgentId(agent.id)}
                     onDeselect={() => setSelectedAgent(null)}
                     onMoveAgent={(agentId, x, y) =>
                       void handleMoveAgent(agentId, x, y)
@@ -352,7 +468,17 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                   />
                 </Suspense>
               </SceneErrorBoundary>
-              {selectedAgent ? (
+              {layoutEditMode && draftLayout ? (
+                <LayoutEditorPanel
+                  layout={draftLayout}
+                  saving={savingLayout}
+                  onChange={setDraftLayout}
+                  onSave={() => void handleSaveLayout()}
+                  onCancel={handleCancelLayoutEdit}
+                  onReset={handleResetLayoutDraft}
+                />
+              ) : null}
+              {!layoutEditMode && selectedAgent ? (
                 <AgentFlyout
                   agent={selectedAgent}
                   events={events}

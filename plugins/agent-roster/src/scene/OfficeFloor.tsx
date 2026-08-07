@@ -20,9 +20,11 @@ function zoneFloorColor(theme: SceneTheme, type: ZoneType): string {
 export function OfficeFloor({
   layout,
   theme,
+  showZoneLabels,
 }: {
   layout: OfficeLayout;
   theme: SceneTheme;
+  showZoneLabels: boolean;
 }) {
   const { width, height } = layout.grid_dimensions;
 
@@ -50,6 +52,7 @@ export function OfficeFloor({
               />
             </mesh>
             <Text
+              visible={showZoneLabels}
               position={[center[0], 0.15, center[2] - size.depth / 2 + 0.6]}
               rotation={[-Math.PI / 2, 0, 0]}
               fontSize={0.35}

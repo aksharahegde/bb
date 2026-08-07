@@ -1,14 +1,20 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Group, Vector3 } from "three";
+import { MovementTrail } from "./MovementTrail.js";
+import type { SceneTheme } from "../hooks/useSceneTheme.js";
 
 export function AnimatedAgentGroup({
   target,
   reducedMotion,
+  showMovementTrails,
+  theme,
   children,
 }: {
   target: [number, number, number];
   reducedMotion: boolean;
+  showMovementTrails: boolean;
+  theme: SceneTheme;
   children: ReactNode;
 }) {
   const groupRef = useRef<Group>(null);
@@ -28,8 +34,17 @@ export function AnimatedAgentGroup({
   });
 
   return (
-    <group ref={groupRef} position={target}>
-      {children}
-    </group>
+    <>
+      <MovementTrail
+        groupRef={groupRef}
+        destination={destination}
+        theme={theme}
+        enabled={showMovementTrails}
+        reducedMotion={reducedMotion}
+      />
+      <group ref={groupRef} position={target}>
+        {children}
+      </group>
+    </>
   );
 }

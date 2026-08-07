@@ -227,6 +227,33 @@ export const rosterRpcContract = defineRpcContract({
       })
       .strict(),
   },
+  getOfficeLayout: {
+    input: z.object({ projectId: z.string() }).strict(),
+    output: z.object({ layout: officeLayoutSchema }).strict(),
+  },
+  saveOfficeLayout: {
+    input: z
+      .object({
+        projectId: z.string(),
+        layout: officeLayoutSchema,
+      })
+      .strict(),
+    output: z
+      .object({
+        layout: officeLayoutSchema,
+        agentsRepositioned: z.number().int(),
+      })
+      .strict(),
+  },
+  resetOfficeLayout: {
+    input: z.object({ projectId: z.string() }).strict(),
+    output: z
+      .object({
+        layout: officeLayoutSchema,
+        agentsRepositioned: z.number().int(),
+      })
+      .strict(),
+  },
 });
 
 export type RosterRpcContract = typeof rosterRpcContract;

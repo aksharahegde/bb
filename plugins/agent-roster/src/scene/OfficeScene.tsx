@@ -12,13 +12,18 @@ import { useReducedMotion } from "./hooks/useReducedMotion.js";
 import { useSceneTheme } from "./hooks/useSceneTheme.js";
 import { OfficeCamera } from "./OfficeCamera.js";
 import { OfficeFloor, ZoneDecorations } from "./OfficeFloor.js";
+import { SceneLighting } from "./SceneLighting.js";
+import type { SceneSettings } from "./scene-settings.js";
 
 export interface OfficeSceneProps {
   layout: OfficeLayout;
   agents: RosterAgent[];
   collaborationGroups: CollaborationGroup[];
   selectedAgentId: string | null;
+  focusAgentId: string | null;
+  sceneSettings: SceneSettings;
   onSelectAgent: (agent: RosterAgent) => void;
+  onFocusAgent: (agent: RosterAgent) => void;
   onDeselect: () => void;
   onMoveAgent: (agentId: string, x: number, y: number) => void;
 }
@@ -28,7 +33,10 @@ export default function OfficeScene({
   agents,
   collaborationGroups,
   selectedAgentId,
+  focusAgentId,
+  sceneSettings,
   onSelectAgent,
+  onFocusAgent,
   onDeselect,
   onMoveAgent,
 }: OfficeSceneProps) {
@@ -47,6 +55,16 @@ export default function OfficeScene({
     [theme.floor, theme.ink],
   );
 
+  const focusTarget = useMemo(() => {
+    const agent = agents.find((entry) => entry.id === focusAgentId);
+    if (!agent) return null;
+    return gridToWorld(
+      agent.spatial_state.position_x,
+      agent.spatial_state.position_y,
+      layout.grid_dimensions,
+    );
+  }, [agents, focusAgentId, layout.grid_dimensions]);
+
   return (
     <Canvas
       shadows
@@ -56,15 +74,8 @@ export default function OfficeScene({
       onPointerMissed={onDeselect}
     >
       <color attach="background" args={[background]} />
-      <OfficeCamera layout={layout} />
-      <ambientLight intensity={0.55} />
-      <directionalLight
-        position={[8, 12, 6]}
-        intensity={1.1}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
+      <OfficeCamera layout={layout} focusTarget={focusTarget} />
+      <SceneLighting theme={theme} />
       <ContactShadows
         position={[0, 0.02, 0]}
         opacity={0.35}
@@ -73,7 +84,11 @@ export default function OfficeScene({
         far={12}
       />
       <DragProvider>
-        <OfficeFloor layout={layout} theme={theme} />
+        <OfficeFloor
+          layout={layout}
+          theme={theme}
+          showZoneLabels={sceneSettings.showZoneLabels}
+        />
         <ZoneDecorations layout={layout} theme={theme} />
         <CollaborationBeams
           layout={layout}
@@ -99,13 +114,17 @@ export default function OfficeScene({
               key={agent.id}
               target={position}
               reducedMotion={reducedMotion}
+              showMovementTrails={sceneSettings.showMovementTrails}
+              theme={theme}
             >
               <AgentStation
                 agent={agent}
                 theme={theme}
                 selected={selectedAgentId === agent.id}
                 reducedMotion={reducedMotion}
+                showParticles={sceneSettings.showParticles}
                 onSelect={onSelectAgent}
+                onFocus={onFocusAgent}
               />
             </AnimatedAgentGroup>
           );

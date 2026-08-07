@@ -6,6 +6,11 @@ import { z } from "zod";
 import { REALTIME_CHANNEL, rosterRpcContract } from "./contract.js";
 import { computeCollaborationGroups } from "./src/collaboration.js";
 import { layoutZoneIdToAgentZone } from "./src/spatial.js";
+import {
+  extractSplits,
+  layoutFromSplits,
+  updateZoneNames,
+} from "./src/layout-editor.js";
 import { RosterStore } from "./src/store.js";
 import { AGENT_STATUSES } from "./src/types.js";
 
@@ -231,6 +236,23 @@ export default async function plugin(bb: BbPluginApi) {
         models: [...MODEL_OPTIONS],
       };
     },
+    async getOfficeLayout(input) {
+      const layout = await store.getOfficeLayout(input.projectId);
+      return { layout };
+    },
+    async saveOfficeLayout(input) {
+      const result = await store.applyOfficeLayout(
+        input.projectId,
+        input.layout,
+      );
+      publishChanged(input.projectId);
+      return result;
+    },
+    async resetOfficeLayout(input) {
+      const result = await store.resetOfficeLayout(input.projectId);
+      publishChanged(input.projectId);
+      return result;
+    },
   });
 
   bb.agents.registerTool({
@@ -394,6 +416,50 @@ export default async function plugin(bb: BbPluginApi) {
     },
   });
 
+  bb.agents.registerTool({
+    name: "update_office_layout",
+    description:
+      "Update .bb/roster/office_layout.json zone splits and names. Grid stays 24×16 with four fixed zones.",
+    parameters: z
+      .object({
+        column_split: z.number().int().optional(),
+        row_split: z.number().int().optional(),
+        zone_names: z
+          .object({
+            fixed_desks: z.string().min(1).optional(),
+            meeting_room: z.string().min(1).optional(),
+            breakout_room: z.string().min(1).optional(),
+            testing_lab: z.string().min(1).optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict(),
+    async execute(input, ctx) {
+      try {
+        const current = await store.getOfficeLayout(ctx.projectId);
+        let zones = current.zones;
+        if (input.zone_names) {
+          zones = updateZoneNames(current, input.zone_names).zones;
+        }
+        const splits = extractSplits(current);
+        const nextLayout = layoutFromSplits(
+          input.column_split ?? splits.columnSplit,
+          input.row_split ?? splits.rowSplit,
+          zones,
+        );
+        const result = await store.applyOfficeLayout(ctx.projectId, nextLayout);
+        publishChanged(ctx.projectId);
+        return toolJson({
+          layout: result.layout,
+          agents_repositioned: result.agentsRepositioned,
+        });
+      } catch (error) {
+        return toolError(error instanceof Error ? error.message : String(error));
+      }
+    },
+  });
+
   bb.agents.configure(() => ({
     tools: [
       "register_roster_agent",
@@ -402,6 +468,7 @@ export default async function plugin(bb: BbPluginApi) {
       "invoke_roster_agent",
       "assign_agent_to_zone",
       "list_roster_agents",
+      "update_office_layout",
     ],
     skills: ["agent-roster"],
   }));

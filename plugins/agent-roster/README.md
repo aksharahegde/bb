@@ -12,6 +12,8 @@ Create custom specialized agents (name, role, avatar, tool permissions, system p
 Open **Agent Roaster** from the plugin nav panel for:
 
 - Spatial view with draggable agent stations, collaboration beams, and speech bubbles
+- Office layout editor for zone splits and names
+- Theme-aware lighting, 3D avatars, status particles, and movement trails
 - List view with quick invoke
 - Create Custom Agent modal
 - Live event stream sidebar
@@ -23,6 +25,7 @@ Open **Agent Roaster** from the plugin nav panel for:
 | `register_roster_agent` | Add agent profile and auto-place at desk |
 | `update_roster_agent` | Update agent profile (tools locked while active) |
 | `archive_roster_agent` | Archive agent (sets status to offline) |
+| `update_office_layout` | Resize zone splits and rename zones |
 | `invoke_roster_agent` | Spawn hidden thread with agent system prompt |
 | `assign_agent_to_zone` | Reposition agent in a zone |
 | `list_roster_agents` | List agents with spatial state |

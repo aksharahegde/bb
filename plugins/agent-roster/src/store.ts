@@ -1,5 +1,9 @@
 import type { BbPluginApi } from "@bb/plugin-sdk";
 import {
+  reconcileAgentPositions,
+  validateOfficeLayout,
+} from "./layout-editor.js";
+import {
   agentsFilePath,
   hostFileArgs,
   officeLayoutFilePath,
@@ -271,10 +275,46 @@ export class RosterStore {
     projectId: string,
     layout: OfficeLayout,
   ): Promise<OfficeLayout> {
+    const result = await this.applyOfficeLayout(projectId, layout);
+    return result.layout;
+  }
+
+  async applyOfficeLayout(
+    projectId: string,
+    layout: OfficeLayout,
+  ): Promise<{ layout: OfficeLayout; agentsRepositioned: number }> {
+    const validationError = validateOfficeLayout(layout);
+    if (validationError) {
+      throw new Error(validationError);
+    }
     const source = await resolveProjectSource(this.bb, projectId);
     const { sha256 } = await this.readLayoutState(source);
     await this.writeLayout(source, layout, sha256);
-    return layout;
+
+    const agents = await this.listAgents(projectId);
+    const updates = reconcileAgentPositions(layout, agents);
+    for (const update of updates) {
+      await this.updateAgentSpatial(projectId, update.agentId, update.spatial);
+    }
+
+    await this.appendEvent(projectId, {
+      message: "Office layout updated",
+      agent_id: null,
+    });
+    if (updates.length > 0) {
+      await this.appendEvent(projectId, {
+        message: `Repositioned ${updates.length} agent(s) after layout change`,
+        agent_id: null,
+      });
+    }
+
+    return { layout, agentsRepositioned: updates.length };
+  }
+
+  async resetOfficeLayout(
+    projectId: string,
+  ): Promise<{ layout: OfficeLayout; agentsRepositioned: number }> {
+    return this.applyOfficeLayout(projectId, DEFAULT_OFFICE_LAYOUT);
   }
 
   async listAgents(

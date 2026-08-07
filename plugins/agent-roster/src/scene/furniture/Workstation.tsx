@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { MeshStandardMaterial, type Mesh } from "three";
+import { RoundedBox } from "@react-three/drei";
 import type { AgentStatus } from "../../types.js";
 import { DESK_HEIGHT, MONITOR_HEIGHT } from "../constants.js";
 import type { SceneTheme } from "../hooks/useSceneTheme.js";
@@ -47,10 +48,16 @@ export function Workstation({
 
   return (
     <group>
-      <mesh position={[0, DESK_HEIGHT, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.4, 0.06, 0.7]} />
+      <RoundedBox
+        args={[1.4, 0.08, 0.7]}
+        radius={0.03}
+        smoothness={4}
+        position={[0, DESK_HEIGHT, 0]}
+        castShadow
+        receiveShadow
+      >
         <meshStandardMaterial color={theme.desk} transparent opacity={opacity} />
-      </mesh>
+      </RoundedBox>
       {[
         [-0.6, DESK_HEIGHT / 2, -0.28],
         [0.6, DESK_HEIGHT / 2, -0.28],
@@ -62,10 +69,19 @@ export function Workstation({
           <meshStandardMaterial color={theme.desk} transparent opacity={opacity} />
         </mesh>
       ))}
-      <mesh position={[0, DESK_HEIGHT + 0.12, -0.22]} castShadow>
-        <boxGeometry args={[0.15, 0.2, 0.1]} />
-        <meshStandardMaterial color={theme.monitorBezel} transparent opacity={opacity} />
-      </mesh>
+      <RoundedBox
+        args={[0.15, 0.2, 0.1]}
+        radius={0.02}
+        smoothness={3}
+        position={[0, DESK_HEIGHT + 0.12, -0.22]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={theme.monitorBezel}
+          transparent
+          opacity={opacity}
+        />
+      </RoundedBox>
       <mesh
         ref={monitorRef}
         position={[0, MONITOR_HEIGHT, -0.22]}
@@ -80,14 +96,24 @@ export function Workstation({
           opacity={opacity}
         />
       </mesh>
-      <mesh position={[0, 0.45, 0.45]} castShadow>
-        <boxGeometry args={[0.5, 0.08, 0.5]} />
+      <RoundedBox
+        args={[0.5, 0.08, 0.5]}
+        radius={0.04}
+        smoothness={3}
+        position={[0, 0.45, 0.45]}
+        castShadow
+      >
         <meshStandardMaterial color={theme.chair} transparent opacity={opacity} />
-      </mesh>
-      <mesh position={[0, 0.75, 0.62]} castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.08]} />
+      </RoundedBox>
+      <RoundedBox
+        args={[0.5, 0.5, 0.08]}
+        radius={0.04}
+        smoothness={3}
+        position={[0, 0.75, 0.62]}
+        castShadow
+      >
         <meshStandardMaterial color={theme.chair} transparent opacity={opacity} />
-      </mesh>
+      </RoundedBox>
     </group>
   );
 }

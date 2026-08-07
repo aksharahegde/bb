@@ -9,19 +9,24 @@ import { AgentAvatar } from "./AgentAvatar.js";
 import { AgentNameplate } from "./AgentNameplate.js";
 import { AgentSpeechBubble } from "./AgentSpeechBubble.js";
 import { AgentStatusEffects } from "./AgentStatusEffects.js";
+import { StatusParticles } from "./StatusParticles.js";
 
 export function AgentStation({
   agent,
   theme,
   selected,
   reducedMotion,
+  showParticles,
   onSelect,
+  onFocus,
 }: {
   agent: RosterAgent;
   theme: SceneTheme;
   selected: boolean;
   reducedMotion: boolean;
+  showParticles: boolean;
   onSelect: (agent: RosterAgent) => void;
+  onFocus: (agent: RosterAgent) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const { startDrag } = useDragApi();
@@ -33,6 +38,11 @@ export function AgentStation({
   const handleClick = (event: ThreeEvent<MouseEvent>): void => {
     event.stopPropagation();
     onSelect(agent);
+  };
+
+  const handleDoubleClick = (event: ThreeEvent<MouseEvent>): void => {
+    event.stopPropagation();
+    onFocus(agent);
   };
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>): void => {
@@ -49,7 +59,16 @@ export function AgentStation({
         reducedMotion={reducedMotion}
         dimmed={dimmed}
       />
-      {!dimmed ? <AgentAvatar avatar={agent.avatar} /> : null}
+      {!dimmed ? (
+        <AgentAvatar avatar={agent.avatar} role={agent.role} theme={theme} />
+      ) : null}
+      {showParticles && !dimmed ? (
+        <StatusParticles
+          status={status}
+          theme={theme}
+          reducedMotion={reducedMotion}
+        />
+      ) : null}
       <AgentNameplate
         name={agent.name}
         role={agent.role}
@@ -67,6 +86,7 @@ export function AgentStation({
       <mesh
         position={[0, 0.8, 0]}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onPointerDown={handlePointerDown}
         onPointerOver={(event) => {
           event.stopPropagation();
