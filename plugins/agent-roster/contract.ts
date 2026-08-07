@@ -32,6 +32,14 @@ const rosterAgentSchema = z
     created_at: z.string(),
     active_thread_id: z.string().nullable(),
     speech_bubble: z.string().nullable(),
+    active_since: z.string().nullable(),
+  })
+  .strict();
+
+const collaborationGroupSchema = z
+  .object({
+    thread_id: z.string(),
+    agent_ids: z.array(z.string()),
   })
   .strict();
 
@@ -111,6 +119,7 @@ export const rosterRpcContract = defineRpcContract({
             total: z.number(),
           })
           .strict(),
+        collaboration_groups: z.array(collaborationGroupSchema),
       })
       .strict(),
   },

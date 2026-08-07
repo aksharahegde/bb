@@ -13,6 +13,7 @@ import type {
   AgentFilters,
   AgentStatus,
   AgentsDocument,
+  CollaborationGroup,
   OfficeLayout,
   RegisterAgentInput,
   RosterAgent,
@@ -42,6 +43,19 @@ function parseAgentsDocument(raw: string): AgentsDocument {
     throw new Error("Invalid agents document shape in .bb/roster/agents.json");
   }
   return parsed as AgentsDocument;
+}
+
+function normalizeDocument(document: AgentsDocument): AgentsDocument {
+  return {
+    ...document,
+    agents: document.agents.map((agent) =>
+      "active_since" in agent
+        ? storedAgentToRoster(
+            agent as Omit<RosterAgent, "active_since">,
+          )
+        : parseStoredAgent(agent),
+    ),
+  };
 }
 
 function parseOfficeLayout(raw: string): OfficeLayout {
@@ -92,6 +106,16 @@ function matchesFilters(agent: RosterAgent, filters: AgentFilters): boolean {
 }
 
 const EVENTS_KV_PREFIX = "events:";
+const ACTIVE_SINCE_KV_PREFIX = "active-since:";
+
+function storedAgentToRoster(agent: Omit<RosterAgent, "active_since">): RosterAgent {
+  return { ...agent, active_since: null };
+}
+
+function parseStoredAgent(raw: unknown): RosterAgent {
+  const agent = raw as Omit<RosterAgent, "active_since">;
+  return storedAgentToRoster(agent);
+}
 
 export class RosterStore {
   constructor(private readonly bb: BbPluginApi) {}
@@ -109,7 +133,7 @@ export class RosterStore {
         throw new Error(".bb/roster/agents.json is not UTF-8 text");
       }
       return {
-        document: parseAgentsDocument(file.content),
+        document: normalizeDocument(parseAgentsDocument(file.content)),
         sha256: file.sha256,
       };
     } catch (error) {
@@ -154,7 +178,14 @@ export class RosterStore {
       path: rosterDirectory(source),
       recursive: true,
     });
-    const content = `${JSON.stringify(document, null, 2)}\n`;
+    const content = `${JSON.stringify(
+      {
+        ...document,
+        agents: document.agents.map(({ active_since: _activeSince, ...agent }) => agent),
+      },
+      null,
+      2,
+    )}\n`;
     const result = await this.bb.sdk.files.write({
       ...hostFileArgs(source),
       path: agentsFilePath(source),
@@ -248,8 +279,13 @@ export class RosterStore {
     await this.ensureSeed(projectId);
     const source = await resolveProjectSource(this.bb, projectId);
     const { document } = await this.readAgentsState(source);
+    const activeSince = await this.getActiveSinceMap(projectId);
     return document.agents
       .filter((agent) => matchesFilters(agent, filters))
+      .map((agent) => ({
+        ...agent,
+        active_since: activeSince[agent.id] ?? null,
+      }))
       .sort((left, right) => left.name.localeCompare(right.name));
   }
 
@@ -283,6 +319,7 @@ export class RosterStore {
           created_at: new Date().toISOString(),
           active_thread_id: null,
           speech_bubble: null,
+          active_since: null,
         });
       }
       changed = true;
@@ -322,6 +359,7 @@ export class RosterStore {
       created_at: new Date().toISOString(),
       active_thread_id: null,
       speech_bubble: null,
+      active_since: null,
     };
     await this.mutateAgents(projectId, (document) => {
       document.agents.push(agent);
@@ -356,7 +394,57 @@ export class RosterStore {
     if (updated === null) {
       throw new Error(`Roster agent "${id}" was not found`);
     }
+    await this.syncActiveSince(projectId, updated);
     return updated;
+  }
+
+  private activeSinceKey(projectId: string): string {
+    return `${ACTIVE_SINCE_KV_PREFIX}${projectId}`;
+  }
+
+  private async getActiveSinceMap(
+    projectId: string,
+  ): Promise<Record<string, string>> {
+    return (
+      (await this.bb.storage.kv.get<Record<string, string>>(
+        this.activeSinceKey(projectId),
+      )) ?? {}
+    );
+  }
+
+  private async syncActiveSince(
+    projectId: string,
+    agent: RosterAgent,
+  ): Promise<void> {
+    const map = await this.getActiveSinceMap(projectId);
+    const isActive =
+      agent.spatial_state.status === "working" ||
+      agent.spatial_state.status === "thinking";
+    if (isActive) {
+      if (!map[agent.id]) {
+        map[agent.id] = new Date().toISOString();
+        await this.bb.storage.kv.set(this.activeSinceKey(projectId), map);
+      }
+      return;
+    }
+    if (map[agent.id]) {
+      delete map[agent.id];
+      await this.bb.storage.kv.set(this.activeSinceKey(projectId), map);
+    }
+  }
+
+  async syncCollaborationToConference(
+    projectId: string,
+    groups: CollaborationGroup[],
+  ): Promise<void> {
+    for (const group of groups) {
+      for (const agentId of group.agent_ids) {
+        const agent = await this.readAgent(projectId, agentId);
+        if (agent.spatial_state.zone !== "conference_room") {
+          await this.assignAgentToZone(projectId, agentId, "meeting_room");
+        }
+      }
+    }
   }
 
   async assignAgentToZone(

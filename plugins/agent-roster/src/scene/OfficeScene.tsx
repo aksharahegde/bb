@@ -1,9 +1,12 @@
 import { ContactShadows } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useMemo } from "react";
-import type { OfficeLayout, RosterAgent } from "../types.js";
+import { useCallback, useMemo } from "react";
+import type { CollaborationGroup, OfficeLayout, RosterAgent } from "../types.js";
+import { AnimatedAgentGroup } from "./agents/AnimatedAgentGroup.js";
 import { AgentStation } from "./agents/AgentStation.js";
+import { CollaborationBeams } from "./agents/CollaborationBeams.js";
 import { gridToWorld } from "./coordinates.js";
+import { DragController } from "./DragController.js";
 import { useReducedMotion } from "./hooks/useReducedMotion.js";
 import { useSceneTheme } from "./hooks/useSceneTheme.js";
 import { OfficeCamera } from "./OfficeCamera.js";
@@ -12,22 +15,36 @@ import { OfficeFloor, ZoneDecorations } from "./OfficeFloor.js";
 export interface OfficeSceneProps {
   layout: OfficeLayout;
   agents: RosterAgent[];
+  collaborationGroups: CollaborationGroup[];
   selectedAgentId: string | null;
   onSelectAgent: (agent: RosterAgent) => void;
   onDeselect: () => void;
+  onMoveAgent: (agentId: string, x: number, y: number) => void;
 }
 
 export default function OfficeScene({
   layout,
   agents,
+  collaborationGroups,
   selectedAgentId,
   onSelectAgent,
   onDeselect,
+  onMoveAgent,
 }: OfficeSceneProps) {
   const theme = useSceneTheme();
   const reducedMotion = useReducedMotion();
 
-  const cameraTarget = useMemo<[number, number, number]>(() => [0, 0, 0], []);
+  const handleMove = useCallback(
+    (agentId: string, x: number, y: number) => {
+      onMoveAgent(agentId, x, y);
+    },
+    [onMoveAgent],
+  );
+
+  const background = useMemo(
+    () => `#${theme.floor.clone().lerp(theme.ink, 0.04).getHexString()}`,
+    [theme.floor, theme.ink],
+  );
 
   return (
     <Canvas
@@ -37,8 +54,8 @@ export default function OfficeScene({
       gl={{ antialias: true }}
       onPointerMissed={onDeselect}
     >
-      <color attach="background" args={[`#${theme.floor.clone().lerp(theme.ink, 0.04).getHexString()}`]} />
-      <OfficeCamera target={cameraTarget} />
+      <color attach="background" args={[background]} />
+      <OfficeCamera layout={layout} />
       <ambientLight intensity={0.55} />
       <directionalLight
         position={[8, 12, 6]}
@@ -56,14 +73,31 @@ export default function OfficeScene({
       />
       <OfficeFloor layout={layout} theme={theme} />
       <ZoneDecorations layout={layout} theme={theme} />
+      <CollaborationBeams
+        layout={layout}
+        agents={agents}
+        groups={collaborationGroups}
+        theme={theme}
+        reducedMotion={reducedMotion}
+      />
+      <DragController
+        layout={layout}
+        agents={agents}
+        reducedMotion={reducedMotion}
+        onMoveAgent={handleMove}
+      />
       {agents.map((agent) => {
-        const [x, , z] = gridToWorld(
+        const position = gridToWorld(
           agent.spatial_state.position_x,
           agent.spatial_state.position_y,
           layout.grid_dimensions,
         );
         return (
-          <group key={agent.id} position={[x, 0, z]}>
+          <AnimatedAgentGroup
+            key={agent.id}
+            target={position}
+            reducedMotion={reducedMotion}
+          >
             <AgentStation
               agent={agent}
               theme={theme}
@@ -71,7 +105,7 @@ export default function OfficeScene({
               reducedMotion={reducedMotion}
               onSelect={onSelectAgent}
             />
-          </group>
+          </AnimatedAgentGroup>
         );
       })}
     </Canvas>

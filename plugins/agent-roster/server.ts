@@ -4,6 +4,7 @@ import {
 } from "@bb/plugin-sdk";
 import { z } from "zod";
 import { REALTIME_CHANNEL, rosterRpcContract } from "./contract.js";
+import { computeCollaborationGroups } from "./src/collaboration.js";
 import { layoutZoneIdToAgentZone } from "./src/spatial.js";
 import { RosterStore } from "./src/store.js";
 import { AGENT_STATUSES } from "./src/types.js";
@@ -101,8 +102,21 @@ export default async function plugin(bb: BbPluginApi) {
       message: `${agent.name} assigned to ${args.taskId ?? "ad-hoc task"}`,
       agent_id: agent.id,
     });
+    const agents = await store.listAgents(args.projectId);
+    const groups = await computeCollaborationGroups(bb, agents);
+    if (groups.length > 0) {
+      await store.syncCollaborationToConference(args.projectId, groups);
+    }
     publishChanged(args.projectId);
     return { threadId: thread.id, agent: updated };
+  }
+
+  async function refreshCollaboration(projectId: string): Promise<void> {
+    const agents = await store.listAgents(projectId);
+    const groups = await computeCollaborationGroups(bb, agents);
+    if (groups.length > 0) {
+      await store.syncCollaborationToConference(projectId, groups);
+    }
   }
 
   bb.rpc.register(rosterRpcContract, {
@@ -125,6 +139,7 @@ export default async function plugin(bb: BbPluginApi) {
       });
       const layout = await store.getOfficeLayout(input.projectId);
       const events = await store.listEvents(input.projectId);
+      const collaboration_groups = await computeCollaborationGroups(bb, agents);
       const active = agents.filter(
         (agent) =>
           agent.spatial_state.status === "working" ||
@@ -134,6 +149,7 @@ export default async function plugin(bb: BbPluginApi) {
         agents,
         layout,
         events,
+        collaboration_groups,
         metrics: { active, total: agents.length },
       };
     },
@@ -327,6 +343,7 @@ export default async function plugin(bb: BbPluginApi) {
       "working",
       "Working…",
     );
+    await refreshCollaboration(thread.projectId);
     publishChanged(thread.projectId);
   });
 

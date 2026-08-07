@@ -41,8 +41,15 @@ export interface RosterAgent {
   created_at: string;
   /** Active bb thread when status is working/thinking. */
   active_thread_id: string | null;
-  /** Latest speech bubble text for the 2D canvas. */
+  /** Latest speech bubble text for the 3D canvas. */
   speech_bubble: string | null;
+  /** When the agent entered working/thinking; enriched from plugin kv at read time. */
+  active_since: string | null;
+}
+
+export interface CollaborationGroup {
+  thread_id: string;
+  agent_ids: string[];
 }
 
 export interface AgentsDocument {

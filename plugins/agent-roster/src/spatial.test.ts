@@ -24,6 +24,7 @@ function makeAgent(
     },
     created_at: new Date().toISOString(),
     active_thread_id: null,
+    active_since: null,
     speech_bubble: null,
     ...overrides,
   };

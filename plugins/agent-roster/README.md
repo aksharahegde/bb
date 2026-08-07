@@ -11,7 +11,7 @@ Create custom specialized agents (name, role, avatar, tool permissions, system p
 
 Open **Agent Roaster** from the plugin nav panel for:
 
-- Spatial view with draggable agent sprites and speech bubbles
+- Spatial view with draggable agent stations, collaboration beams, and speech bubbles
 - List view with quick invoke
 - Create Custom Agent modal
 - Live event stream sidebar
