@@ -11,6 +11,7 @@ import {
   type FurnitureSlot,
 } from "./slots.js";
 import { SlotHighlight } from "./agents/SlotHighlight.js";
+import { useDragApi } from "./DragContext.js";
 
 const raycaster = new Raycaster();
 const pointer = new Vector2();
@@ -29,30 +30,26 @@ export function DragController({
   onMoveAgent: (agentId: string, x: number, y: number) => void;
 }) {
   const { camera, gl } = useThree();
+  const { registerStartDrag } = useDragApi();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [previewSlot, setPreviewSlot] = useState<FurnitureSlot | null>(null);
   const [slotValid, setSlotValid] = useState(true);
   const slots = useRef(generateOfficeSlots(layout)).current;
 
   useEffect(() => {
-    (window as Window & { __rosterStartDrag?: (id: string) => void }).__rosterStartDrag =
-      (agentId: string) => {
-        const agent = agents.find((entry) => entry.id === agentId);
-        if (!agent) return;
-        if (
-          agent.spatial_state.status === "working" ||
-          agent.spatial_state.status === "thinking"
-        ) {
-          return;
-        }
-        setDraggingId(agentId);
-        gl.domElement.style.cursor = "grabbing";
-      };
-    return () => {
-      delete (window as Window & { __rosterStartDrag?: (id: string) => void })
-        .__rosterStartDrag;
-    };
-  }, [agents, gl.domElement]);
+    return registerStartDrag((agentId: string) => {
+      const agent = agents.find((entry) => entry.id === agentId);
+      if (!agent) return;
+      if (
+        agent.spatial_state.status === "working" ||
+        agent.spatial_state.status === "thinking"
+      ) {
+        return;
+      }
+      setDraggingId(agentId);
+      gl.domElement.style.cursor = "grabbing";
+    });
+  }, [agents, gl.domElement, registerStartDrag]);
 
   useEffect(() => {
     if (!draggingId) return;
@@ -114,10 +111,4 @@ export function DragController({
       tone={slotValid ? "valid" : "invalid"}
     />
   );
-}
-
-export function startAgentDrag(agentId: string): void {
-  const starter = (window as Window & { __rosterStartDrag?: (id: string) => void })
-    .__rosterStartDrag;
-  starter?.(agentId);
 }

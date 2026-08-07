@@ -7,6 +7,7 @@ import { AgentStation } from "./agents/AgentStation.js";
 import { CollaborationBeams } from "./agents/CollaborationBeams.js";
 import { gridToWorld } from "./coordinates.js";
 import { DragController } from "./DragController.js";
+import { DragProvider } from "./DragContext.js";
 import { useReducedMotion } from "./hooks/useReducedMotion.js";
 import { useSceneTheme } from "./hooks/useSceneTheme.js";
 import { OfficeCamera } from "./OfficeCamera.js";
@@ -71,43 +72,45 @@ export default function OfficeScene({
         blur={2.5}
         far={12}
       />
-      <OfficeFloor layout={layout} theme={theme} />
-      <ZoneDecorations layout={layout} theme={theme} />
-      <CollaborationBeams
-        layout={layout}
-        agents={agents}
-        groups={collaborationGroups}
-        theme={theme}
-        reducedMotion={reducedMotion}
-      />
-      <DragController
-        layout={layout}
-        agents={agents}
-        reducedMotion={reducedMotion}
-        onMoveAgent={handleMove}
-      />
-      {agents.map((agent) => {
-        const position = gridToWorld(
-          agent.spatial_state.position_x,
-          agent.spatial_state.position_y,
-          layout.grid_dimensions,
-        );
-        return (
-          <AnimatedAgentGroup
-            key={agent.id}
-            target={position}
-            reducedMotion={reducedMotion}
-          >
-            <AgentStation
-              agent={agent}
-              theme={theme}
-              selected={selectedAgentId === agent.id}
+      <DragProvider>
+        <OfficeFloor layout={layout} theme={theme} />
+        <ZoneDecorations layout={layout} theme={theme} />
+        <CollaborationBeams
+          layout={layout}
+          agents={agents}
+          groups={collaborationGroups}
+          theme={theme}
+          reducedMotion={reducedMotion}
+        />
+        <DragController
+          layout={layout}
+          agents={agents}
+          reducedMotion={reducedMotion}
+          onMoveAgent={handleMove}
+        />
+        {agents.map((agent) => {
+          const position = gridToWorld(
+            agent.spatial_state.position_x,
+            agent.spatial_state.position_y,
+            layout.grid_dimensions,
+          );
+          return (
+            <AnimatedAgentGroup
+              key={agent.id}
+              target={position}
               reducedMotion={reducedMotion}
-              onSelect={onSelectAgent}
-            />
-          </AnimatedAgentGroup>
-        );
-      })}
+            >
+              <AgentStation
+                agent={agent}
+                theme={theme}
+                selected={selectedAgentId === agent.id}
+                reducedMotion={reducedMotion}
+                onSelect={onSelectAgent}
+              />
+            </AnimatedAgentGroup>
+          );
+        })}
+      </DragProvider>
     </Canvas>
   );
 }

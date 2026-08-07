@@ -2,7 +2,7 @@ import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useState } from "react";
 import type { RosterAgent } from "../../types.js";
-import { startAgentDrag } from "../DragController.js";
+import { useDragApi } from "../DragContext.js";
 import { Workstation } from "../furniture/Workstation.js";
 import type { SceneTheme } from "../hooks/useSceneTheme.js";
 import { AgentAvatar } from "./AgentAvatar.js";
@@ -24,6 +24,7 @@ export function AgentStation({
   onSelect: (agent: RosterAgent) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const { startDrag } = useDragApi();
   const status = agent.spatial_state.status;
   const dimmed = status === "offline";
   const draggable =
@@ -37,7 +38,7 @@ export function AgentStation({
   const handlePointerDown = (event: ThreeEvent<PointerEvent>): void => {
     if (!draggable) return;
     event.stopPropagation();
-    startAgentDrag(agent.id);
+    startDrag(agent.id);
   };
 
   return (

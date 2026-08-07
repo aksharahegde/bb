@@ -357,7 +357,6 @@ export default async function plugin(bb: BbPluginApi) {
       thread.projectId,
       agent.id,
       {
-        zone: "desks",
         status: "idle",
         current_task_id: null,
       },
