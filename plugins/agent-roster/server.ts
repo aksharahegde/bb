@@ -12,6 +12,7 @@ import {
   updateZoneNames,
 } from "./src/layout-editor.js";
 import { RosterStore } from "./src/store.js";
+import { assertAgentInvokable } from "./src/lifecycle.js";
 import { registerRosterCli } from "./src/cli.js";
 import { summarizeProviderUsage } from "./src/usage-display.js";
 import { AGENT_STATUSES, CHARACTER_PRESETS } from "./src/types.js";
@@ -68,6 +69,7 @@ export default async function plugin(bb: BbPluginApi) {
     parentThreadId?: string | null;
   }): Promise<{ threadId: string; agent: Awaited<ReturnType<RosterStore["readAgent"]>> }> {
     const agent = await store.readAgent(args.projectId, args.agentId);
+    assertAgentInvokable(agent);
     const priorSpatial = { ...agent.spatial_state };
     const priorExtras = {
       active_thread_id: agent.active_thread_id,
@@ -141,6 +143,14 @@ export default async function plugin(bb: BbPluginApi) {
     if (groups.length > 0) {
       await store.syncCollaborationToConference(projectId, groups);
     }
+  }
+
+  async function returnAgentToDesks(
+    projectId: string,
+    agent: Awaited<ReturnType<RosterStore["readAgent"]>>,
+  ): Promise<void> {
+    if (agent.spatial_state.zone !== "testing_lab") return;
+    await store.assignAgentToZone(projectId, agent.id, "fixed_desks");
   }
 
   bb.rpc.register(rosterRpcContract, {
@@ -554,6 +564,7 @@ export default async function plugin(bb: BbPluginApi) {
       message: `${agent.name} completed analysis`,
       agent_id: agent.id,
     });
+    await returnAgentToDesks(thread.projectId, agent);
     publishChanged(thread.projectId);
   });
 
@@ -563,7 +574,7 @@ export default async function plugin(bb: BbPluginApi) {
     await store.updateAgentSpatial(
       thread.projectId,
       agent.id,
-      { status: "error" },
+      { status: "error", current_task_id: null },
       {
         active_thread_id: null,
         speech_bubble: error ?? "Task failed",
@@ -573,6 +584,8 @@ export default async function plugin(bb: BbPluginApi) {
       message: `${agent.name} encountered an error`,
       agent_id: agent.id,
     });
+    const updated = await store.readAgent(thread.projectId, agent.id);
+    await returnAgentToDesks(thread.projectId, updated);
     publishChanged(thread.projectId);
   });
 }

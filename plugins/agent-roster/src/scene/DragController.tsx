@@ -1,5 +1,5 @@
 import { useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plane, Raycaster, Vector2, Vector3 } from "three";
 import type { RosterAgent } from "../types.js";
 import { worldToGrid } from "./coordinates.js";
@@ -34,7 +34,7 @@ export function DragController({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [previewSlot, setPreviewSlot] = useState<FurnitureSlot | null>(null);
   const [slotValid, setSlotValid] = useState(true);
-  const slots = useRef(generateOfficeSlots(layout)).current;
+  const slots = useMemo(() => generateOfficeSlots(layout), [layout]);
 
   useEffect(() => {
     return registerStartDrag((agentId: string) => {

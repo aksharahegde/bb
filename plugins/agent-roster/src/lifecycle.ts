@@ -9,6 +9,21 @@ export function isAgentActive(agent: {
   );
 }
 
+export function isAgentInvokable(agent: RosterAgent): boolean {
+  return (
+    agent.spatial_state.status !== "offline" && !isAgentActive(agent)
+  );
+}
+
+export function assertAgentInvokable(agent: RosterAgent): void {
+  if (agent.spatial_state.status === "offline") {
+    throw new Error("Cannot invoke an offline agent");
+  }
+  if (isAgentActive(agent)) {
+    throw new Error("Agent is already running a task");
+  }
+}
+
 export function assertToolChangesAllowed(
   current: RosterAgent,
   nextTools: string[],

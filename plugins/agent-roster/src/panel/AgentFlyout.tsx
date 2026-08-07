@@ -22,7 +22,7 @@ import { Textarea } from "@bb/shared-ui/textarea";
 import type { RosterAgent } from "../types.js";
 import { getCharacterPreset } from "../scene/characters/presets.js";
 import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
-import { isAgentActive } from "../lifecycle.js";
+import { isAgentActive, isAgentInvokable } from "../lifecycle.js";
 
 const ZONE_OPTIONS = [
   { id: "fixed_desks", label: "Desks" },
@@ -126,7 +126,7 @@ export function AgentFlyout({
         <Button
           size="sm"
           className="w-full"
-          disabled={prompt.trim().length === 0 || isOffline}
+          disabled={prompt.trim().length === 0 || !isAgentInvokable(agent)}
           onClick={() => onInvoke(prompt.trim())}
           data-testid="roster-flyout-assign-task"
         >

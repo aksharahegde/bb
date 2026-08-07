@@ -304,9 +304,50 @@ describe("agent-roster plugin", () => {
     });
     const idle = (
       agentsAfterIdle as {
-        agents: Array<{ id: string; spatial_state: { status: string } }>;
+        agents: Array<{
+          id: string;
+          spatial_state: { status: string; zone: string };
+        }>;
       }
     ).agents.find((agent) => agent.id === agentId);
     expect(idle?.spatial_state.status).toBe("idle");
+    expect(idle?.spatial_state.zone).toBe("desks");
+  });
+
+  it("rejects invoking an agent that is already active", async () => {
+    const { bb, harness, projectId } = createFileHarness();
+    await plugin(bb);
+
+    const created = await harness.runCli(
+      [
+        "create",
+        "--name",
+        "Worker",
+        "--role",
+        "Debugger",
+        "--prompt",
+        "Work",
+        "--project",
+        projectId,
+        "--json",
+      ],
+      { projectId },
+    );
+    const agentId = (JSON.parse(created.stdout) as { agent: { id: string } })
+      .agent.id;
+
+    await harness.behavior.callRpc("invokeAgent", {
+      projectId,
+      agentId,
+      prompt: "First task",
+    });
+
+    await expect(
+      harness.behavior.callRpc("invokeAgent", {
+        projectId,
+        agentId,
+        prompt: "Second task",
+      }),
+    ).rejects.toThrow(/already running/i);
   });
 });

@@ -41,6 +41,9 @@ import { LayoutEditorPanel } from "./LayoutEditorPanel.js";
 import { DEFAULT_OFFICE_LAYOUT } from "../spatial.js";
 import { getCharacterPreset } from "../scene/characters/presets.js";
 import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
+import { zoneLabel } from "./roster-labels.js";
+import { isAgentInvokable } from "../lifecycle.js";
+import { useActiveDuration } from "./AgentFlyout.js";
 import type { UsageDisplay } from "../usage-display.js";
 import {
   DEFAULT_SCENE_SETTINGS,
@@ -114,6 +117,67 @@ function statusPillClass(status: AgentStatus): string {
     default:
       return "bg-muted text-muted-foreground";
   }
+}
+
+function ListAgentRow({
+  agent,
+  selected,
+  onSelect,
+  onInvoke,
+}: {
+  agent: RosterAgent;
+  selected: boolean;
+  onSelect: () => void;
+  onInvoke: () => void;
+}) {
+  const duration = useActiveDuration(agent.active_since);
+  const isActive =
+    agent.spatial_state.status === "working" ||
+    agent.spatial_state.status === "thinking";
+
+  return (
+    <div
+      data-testid={`roster-row-${agent.id}`}
+      className={`flex items-center gap-3 rounded-lg border bg-card p-3 ${
+        selected ? "border-primary/40" : "border-border"
+      }`}
+    >
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        onClick={onSelect}
+      >
+        <div className="h-10 w-8 shrink-0 overflow-hidden rounded bg-muted/40">
+          <CharacterPresetSilhouette
+            preset={getCharacterPreset(agent.avatar)}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium">{agent.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {agent.role} · {zoneLabel(agent.spatial_state.zone)}
+          </div>
+          {isActive && duration ? (
+            <div className="text-[10px] tabular-nums text-success">
+              Running {duration}
+            </div>
+          ) : null}
+        </div>
+      </button>
+      <Badge className={statusPillClass(agent.spatial_state.status)}>
+        {agent.spatial_state.status}
+      </Badge>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={!isAgentInvokable(agent)}
+        onClick={() => onInvoke()}
+        data-testid={`roster-quick-invoke-${agent.id}`}
+      >
+        Invoke
+      </Button>
+    </div>
+  );
 }
 
 export function AgentRosterPanel(_props: PluginNavPanelProps) {
@@ -530,43 +594,58 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
               ) : null}
             </div>
           ) : (
-            <div className="space-y-2 overflow-y-auto">
-              {filteredAgents.map((agent) => (
-                <div
-                  key={agent.id}
-                  data-testid={`roster-row-${agent.id}`}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
-                >
-                  <div className="h-10 w-8 shrink-0 overflow-hidden rounded bg-muted/40">
-                    <CharacterPresetSilhouette
-                      preset={getCharacterPreset(agent.avatar)}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium">{agent.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {agent.role}
-                    </div>
-                  </div>
-                  <Badge className={statusPillClass(agent.spatial_state.status)}>
-                    {agent.spatial_state.status}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={agent.spatial_state.status === "offline"}
-                    onClick={() =>
-                      void handleInvoke(
-                        agent.id,
-                        `Help with ${agent.role.toLowerCase()} work`,
-                      )
-                    }
-                    data-testid="roster-quick-invoke"
+            <div className="relative min-h-[480px]">
+              <div className="space-y-2 overflow-y-auto">
+                {filteredAgents.length === 0 ? (
+                  <div
+                    className="flex h-full min-h-[480px] flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card p-6 text-center"
+                    data-testid="roster-list-empty"
                   >
-                    Invoke
-                  </Button>
-                </div>
-              ))}
+                    <p className="text-sm text-muted-foreground">
+                      {searchQuery || statusFilter !== "all"
+                        ? "No agents match the current filters."
+                        : "No agents yet. Create one to get started."}
+                    </p>
+                    {searchQuery || statusFilter !== "all" ? null : (
+                      <Button
+                        size="sm"
+                        onClick={() => setCreateOpen(true)}
+                        data-testid="roster-list-create-agent"
+                      >
+                        Create Custom Agent
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  filteredAgents.map((agent) => (
+                    <ListAgentRow
+                      key={agent.id}
+                      agent={agent}
+                      selected={selectedAgent?.id === agent.id}
+                      onSelect={() => setSelectedAgent(agent)}
+                      onInvoke={() =>
+                        void handleInvoke(
+                          agent.id,
+                          `Help with ${agent.role.toLowerCase()} work`,
+                        )
+                      }
+                    />
+                  ))
+                )}
+              </div>
+              {selectedAgent ? (
+                <AgentFlyout
+                  agent={selectedAgent}
+                  events={events}
+                  onClose={() => setSelectedAgent(null)}
+                  onInvoke={(prompt) =>
+                    void handleInvoke(selectedAgent.id, prompt)
+                  }
+                  onAssignZone={(zoneId) => void handleAssignZone(zoneId)}
+                  onEdit={() => setEditAgent(selectedAgent)}
+                  onArchive={() => void handleArchiveAgent(selectedAgent.id)}
+                />
+              ) : null}
             </div>
           )}
         </div>

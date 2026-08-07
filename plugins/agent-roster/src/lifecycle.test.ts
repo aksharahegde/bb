@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertAgentArchivable,
+  assertAgentInvokable,
   assertToolChangesAllowed,
   isAgentActive,
 } from "./lifecycle.js";
@@ -81,5 +82,35 @@ describe("lifecycle helpers", () => {
         }),
       ),
     ).toThrow(/archive/i);
+  });
+
+  it("blocks invoking offline or active agents", () => {
+    expect(() => assertAgentInvokable(makeAgent())).not.toThrow();
+    expect(() =>
+      assertAgentInvokable(
+        makeAgent({
+          spatial_state: {
+            zone: "desks",
+            position_x: 1,
+            position_y: 1,
+            status: "offline",
+            current_task_id: null,
+          },
+        }),
+      ),
+    ).toThrow(/offline/i);
+    expect(() =>
+      assertAgentInvokable(
+        makeAgent({
+          spatial_state: {
+            zone: "testing_lab",
+            position_x: 1,
+            position_y: 1,
+            status: "working",
+            current_task_id: null,
+          },
+        }),
+      ),
+    ).toThrow(/already running/i);
   });
 });

@@ -16,7 +16,12 @@ import {
   assertToolChangesAllowed,
 } from "./lifecycle.js";
 import { resolveCharacterPreset } from "./scene/characters/emoji-migration.js";
-import { DEFAULT_OFFICE_LAYOUT, findAvailableDesk } from "./spatial.js";
+import {
+  DEFAULT_OFFICE_LAYOUT,
+  findAvailableDesk,
+  layoutZoneIdToAgentZone,
+  positionInZone,
+} from "./spatial.js";
 import { SEED_AGENTS } from "./seed.js";
 import type {
   AgentFilters,
@@ -531,14 +536,72 @@ export class RosterStore {
     projectId: string,
     groups: CollaborationGroup[],
   ): Promise<void> {
-    for (const group of groups) {
-      for (const agentId of group.agent_ids) {
-        const agent = await this.readAgent(projectId, agentId);
-        if (agent.spatial_state.zone !== "conference_room") {
-          await this.assignAgentToZone(projectId, agentId, "meeting_room");
-        }
-      }
+    if (groups.length === 0) return;
+    const agents = await this.listAgents(projectId);
+    const agentIds = [
+      ...new Set(groups.flatMap((group) => group.agent_ids)),
+    ];
+    const toMove = agentIds.filter((agentId) => {
+      const agent = agents.find((entry) => entry.id === agentId);
+      return agent?.spatial_state.zone !== "conference_room";
+    });
+    if (toMove.length === 0) return;
+    await this.assignAgentsToZone(projectId, toMove, "meeting_room");
+  }
+
+  async assignAgentsToZone(
+    projectId: string,
+    agentIds: string[],
+    zoneId: string,
+  ): Promise<RosterAgent[]> {
+    const uniqueIds = [...new Set(agentIds)];
+    if (uniqueIds.length === 0) return [];
+
+    const layout = await this.getOfficeLayout(projectId);
+    const zone = layout.zones.find((entry) => entry.id === zoneId);
+    if (!zone) {
+      throw new Error(`Office zone "${zoneId}" was not found`);
     }
+    const agentZone = layoutZoneIdToAgentZone(zoneId) ?? "desks";
+    const agents = await this.listAgents(projectId);
+    let agentsInZone = agents.filter(
+      (agent) =>
+        agent.spatial_state.zone === agentZone &&
+        !uniqueIds.includes(agent.id),
+    ).length;
+
+    const updatedAgents: RosterAgent[] = [];
+    await this.mutateAgents(projectId, (document) => {
+      for (const agentId of uniqueIds) {
+        const index = document.agents.findIndex((agent) => agent.id === agentId);
+        if (index < 0) {
+          throw new Error(`Roster agent "${agentId}" was not found`);
+        }
+        const position = positionInZone(layout, zoneId, agentsInZone);
+        agentsInZone += 1;
+        const current = document.agents[index]!;
+        const updated: RosterAgent = {
+          ...current,
+          spatial_state: {
+            ...current.spatial_state,
+            zone: agentZone,
+            position_x: position.position_x,
+            position_y: position.position_y,
+          },
+        };
+        document.agents[index] = updated;
+        updatedAgents.push(updated);
+      }
+    });
+
+    for (const agent of updatedAgents) {
+      await this.syncActiveSince(projectId, agent);
+      await this.appendEvent(projectId, {
+        message: `${agent.name} assigned to ${zone.name}`,
+        agent_id: agent.id,
+      });
+    }
+    return updatedAgents;
   }
 
   async assignAgentToZone(
@@ -546,42 +609,10 @@ export class RosterStore {
     agentId: string,
     zoneId: string,
   ): Promise<RosterAgent> {
-    const layout = await this.getOfficeLayout(projectId);
-    const agents = await this.listAgents(projectId);
-    const zone = layout.zones.find((entry) => entry.id === zoneId);
-    if (!zone) {
-      throw new Error(`Office zone "${zoneId}" was not found`);
+    const [agent] = await this.assignAgentsToZone(projectId, [agentId], zoneId);
+    if (!agent) {
+      throw new Error(`Roster agent "${agentId}" was not found`);
     }
-    const agentsInZone = agents.filter((agent) => {
-      const zoneMap: Record<string, string> = {
-        fixed_desks: "desks",
-        meeting_room: "conference_room",
-        breakout_room: "lounge",
-        testing_lab: "testing_lab",
-      };
-      return agent.spatial_state.zone === zoneMap[zoneId];
-    });
-    const col = agentsInZone.length % Math.max(1, Math.floor((zone.bounds.width - 2) / 2));
-    const row = Math.floor(
-      agentsInZone.length / Math.max(1, Math.floor((zone.bounds.width - 2) / 2)),
-    );
-    const position_x = zone.bounds.x + 1 + col * 2;
-    const position_y = zone.bounds.y + 1 + row * 2;
-    const zoneMap: Record<string, SpatialState["zone"]> = {
-      fixed_desks: "desks",
-      meeting_room: "conference_room",
-      breakout_room: "lounge",
-      testing_lab: "testing_lab",
-    };
-    const agent = await this.updateAgentSpatial(projectId, agentId, {
-      zone: zoneMap[zoneId] ?? "desks",
-      position_x,
-      position_y,
-    });
-    await this.appendEvent(projectId, {
-      message: `${agent.name} assigned to ${zone.name}`,
-      agent_id: agent.id,
-    });
     return agent;
   }
 

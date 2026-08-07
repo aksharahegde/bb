@@ -10,8 +10,10 @@ import {
 } from "@bb/shared-ui/select";
 import { cn } from "@bb/shared-ui/lib/utils";
 import type { AgentStatus, RosterAgent, RosterEvent } from "../types.js";
+import { isAgentInvokable } from "../lifecycle.js";
 import { getCharacterPreset } from "../scene/characters/presets.js";
 import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
+import { zoneLabel } from "./roster-labels.js";
 import { useActiveDuration } from "./AgentFlyout.js";
 
 type StatusFilter = AgentStatus | "all";
@@ -28,19 +30,6 @@ function statusPillClass(status: AgentStatus): string {
     case "idle":
     default:
       return "bg-muted text-muted-foreground";
-  }
-}
-
-function zoneLabel(zone: RosterAgent["spatial_state"]["zone"]): string {
-  switch (zone) {
-    case "desks":
-      return "Desks";
-    case "conference_room":
-      return "Conference";
-    case "lounge":
-      return "Lounge";
-    case "testing_lab":
-      return "Testing Lab";
   }
 }
 
@@ -116,7 +105,7 @@ function AgentRosterCard({
         <Button
           size="sm"
           variant="outline"
-          disabled={agent.spatial_state.status === "offline"}
+          disabled={!isAgentInvokable(agent)}
           onClick={() => onInvoke()}
           data-testid={`roster-quick-invoke-${agent.id}`}
         >
@@ -180,15 +169,21 @@ export function RosterSidebar({
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Roster
           </h3>
-          {agents.map((agent) => (
-            <AgentRosterCard
-              key={agent.id}
-              agent={agent}
-              selected={selectedAgentId === agent.id}
-              onSelect={() => onSelectAgent(agent)}
-              onInvoke={() => onInvokeAgent(agent.id)}
-            />
-          ))}
+          {agents.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No agents match the current filters.
+            </p>
+          ) : (
+            agents.map((agent) => (
+              <AgentRosterCard
+                key={agent.id}
+                agent={agent}
+                selected={selectedAgentId === agent.id}
+                onSelect={() => onSelectAgent(agent)}
+                onInvoke={() => onInvokeAgent(agent.id)}
+              />
+            ))
+          )}
         </div>
 
         <div className="space-y-2">
