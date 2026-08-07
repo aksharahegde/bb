@@ -1,14 +1,14 @@
 ---
 name: agent-roster
-description: Create, configure, and orchestrate custom specialized agents in a 2D virtual office (.bb/roster/).
+description: Create, configure, and orchestrate custom specialized agents in a spatial virtual office (.bb/roster/).
 ---
 
-# Agent Roster
+# Agent Roaster
 
 Project roster agents and office layouts live under `.bb/roster/`:
 
 - `agents.json` — agent profiles with spatial state
-- `office_layout.json` — zone grid for the 2D office
+- `office_layout.json` — zone grid for the virtual office
 
 ## Tools
 
@@ -17,4 +17,4 @@ Project roster agents and office layouts live under `.bb/roster/`:
 - `assign_agent_to_zone` — move an agent to a named office zone
 - `list_roster_agents` — list agents, optionally filtered by status or role
 
-Open **Agent Roster & 2D Office** in the sidebar for the spatial canvas, list view, and create-agent flow.
+Open **Agent Roaster** in the sidebar for the spatial canvas, list view, and create-agent flow.

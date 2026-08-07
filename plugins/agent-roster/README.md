@@ -1,6 +1,6 @@
-# Agent Roster
+# Agent Roaster
 
-Create custom specialized agents (name, role, avatar, tool permissions, system prompt) and orchestrate them in a spatial 2D virtual office.
+Create custom specialized agents (name, role, avatar, tool permissions, system prompt) and orchestrate them in a spatial virtual office.
 
 ## Storage
 
@@ -9,9 +9,9 @@ Create custom specialized agents (name, role, avatar, tool permissions, system p
 
 ## UI
 
-Open **Agent Roster & 2D Office** from the plugin nav panel for:
+Open **Agent Roaster** from the plugin nav panel for:
 
-- 2D spatial view with draggable agent sprites and speech bubbles
+- Spatial view with draggable agent sprites and speech bubbles
 - List view with quick invoke
 - Create Custom Agent modal
 - Live event stream sidebar

@@ -1,0 +1,52 @@
+{
+  "grid_dimensions": {
+    "width": 24,
+    "height": 16
+  },
+  "zones": [
+    {
+      "id": "fixed_desks",
+      "name": "Fixed Workstations",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 8
+      },
+      "type": "execution"
+    },
+    {
+      "id": "meeting_room",
+      "name": "Conference Table",
+      "bounds": {
+        "x": 12,
+        "y": 0,
+        "width": 12,
+        "height": 8
+      },
+      "type": "collaboration"
+    },
+    {
+      "id": "breakout_room",
+      "name": "Breakroom / Lounge",
+      "bounds": {
+        "x": 0,
+        "y": 8,
+        "width": 12,
+        "height": 8
+      },
+      "type": "idle_pool"
+    },
+    {
+      "id": "testing_lab",
+      "name": "Testing & Execution Lab",
+      "bounds": {
+        "x": 12,
+        "y": 8,
+        "width": 12,
+        "height": 8
+      },
+      "type": "execution"
+    }
+  ]
+}
