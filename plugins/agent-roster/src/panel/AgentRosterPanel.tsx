@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -17,6 +18,16 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@bb/shared-ui/badge";
 import { Button } from "@bb/shared-ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@bb/shared-ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -42,9 +53,14 @@ import { DEFAULT_OFFICE_LAYOUT } from "../spatial.js";
 import { getCharacterPreset } from "../scene/characters/presets.js";
 import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
 import { zoneLabel } from "./roster-labels.js";
+import { defaultInvokePrompt } from "./roster-prompts.js";
 import { isAgentInvokable } from "../lifecycle.js";
-import { useActiveDuration } from "./AgentFlyout.js";
+import { useActiveDurations } from "./use-active-durations.js";
 import type { UsageDisplay } from "../usage-display.js";
+import {
+  loadStoredSceneSettings,
+  saveStoredSceneSettings,
+} from "./scene-settings-storage.js";
 import {
   DEFAULT_SCENE_SETTINGS,
   type SceneSettings,
@@ -122,15 +138,16 @@ function statusPillClass(status: AgentStatus): string {
 function ListAgentRow({
   agent,
   selected,
+  duration,
   onSelect,
   onInvoke,
 }: {
   agent: RosterAgent;
   selected: boolean;
+  duration: string | null;
   onSelect: () => void;
   onInvoke: () => void;
 }) {
-  const duration = useActiveDuration(agent.active_since);
   const isActive =
     agent.spatial_state.status === "working" ||
     agent.spatial_state.status === "thinking";
@@ -158,7 +175,7 @@ function ListAgentRow({
             {agent.role} · {zoneLabel(agent.spatial_state.zone)}
           </div>
           {isActive && duration ? (
-            <div className="text-[10px] tabular-nums text-success">
+            <div className="text-xs tabular-nums text-success">
               Running {duration}
             </div>
           ) : null}
@@ -207,6 +224,9 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   const [usageDisplay, setUsageDisplay] = useState<UsageDisplay | null>(null);
   const [loading, setLoading] = useState(true);
   const [rosterReady, setRosterReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [layoutDiscardOpen, setLayoutDiscardOpen] = useState(false);
+  const realtimeDebounceRef = useRef<number | null>(null);
 
   const loadProjects = useCallback(async () => {
     const { projects: nextProjects } = await rpc.call("listProjects", null);
@@ -221,7 +241,16 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   useEffect(() => {
     setRosterReady(false);
     setLoading(true);
-  }, [project?.id, statusFilter]);
+    setLoadError(null);
+  }, [project?.id]);
+
+  useEffect(() => {
+    setSceneSettings(loadStoredSceneSettings());
+  }, []);
+
+  useEffect(() => {
+    saveStoredSceneSettings(sceneSettings);
+  }, [sceneSettings]);
 
   const loadRoster = useCallback(async () => {
     if (!project) return;
@@ -230,7 +259,6 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
     try {
       const result = await rpc.call("listAgents", {
         projectId: project.id,
-        ...(statusFilter === "all" ? {} : { status: statusFilter }),
       });
       setAgents(result.agents);
       setLayout(result.layout);
@@ -243,12 +271,15 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
           : null,
       );
       setRosterReady(true);
+      setLoadError(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  }, [rpc, project, statusFilter, rosterReady]);
+  }, [rpc, project, rosterReady]);
 
   useEffect(() => {
     void loadProjects();
@@ -283,19 +314,41 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
       "projectId" in payload &&
       payload.projectId === project?.id
     ) {
-      void loadRoster();
+      if (realtimeDebounceRef.current !== null) {
+        window.clearTimeout(realtimeDebounceRef.current);
+      }
+      realtimeDebounceRef.current = window.setTimeout(() => {
+        void loadRoster();
+      }, 300);
     }
   });
 
+  useEffect(
+    () => () => {
+      if (realtimeDebounceRef.current !== null) {
+        window.clearTimeout(realtimeDebounceRef.current);
+      }
+    },
+    [],
+  );
+
+  const activeDurations = useActiveDurations(agents);
+
   const filteredAgents = useMemo(() => {
+    let result = agents;
+    if (statusFilter !== "all") {
+      result = result.filter(
+        (agent) => agent.spatial_state.status === statusFilter,
+      );
+    }
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return agents;
-    return agents.filter(
+    if (!query) return result;
+    return result.filter(
       (agent) =>
         agent.name.toLowerCase().includes(query) ||
         agent.role.toLowerCase().includes(query),
     );
-  }, [agents, searchQuery]);
+  }, [agents, searchQuery, statusFilter]);
 
   const spatialAgents = useMemo(
     () =>
@@ -377,9 +430,28 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
     setSelectedAgent(null);
   };
 
+  const handleSelectAgent = (agent: RosterAgent): void => {
+    setSelectedAgent(agent);
+    setFocusAgentId(agent.id);
+  };
+
+  const layoutIsDirty = useMemo(() => {
+    if (!layout || !draftLayout) return false;
+    return JSON.stringify(layout) !== JSON.stringify(draftLayout);
+  }, [layout, draftLayout]);
+
   const handleCancelLayoutEdit = (): void => {
     setLayoutEditMode(false);
     setDraftLayout(null);
+    setLayoutDiscardOpen(false);
+  };
+
+  const requestExitLayoutEdit = (): void => {
+    if (layoutIsDirty) {
+      setLayoutDiscardOpen(true);
+      return;
+    }
+    handleCancelLayoutEdit();
   };
 
   const handleResetLayoutDraft = (): void => {
@@ -448,6 +520,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
             <Button
               size="sm"
               variant={sceneSettings.showZoneLabels ? "default" : "outline"}
+              aria-pressed={sceneSettings.showZoneLabels}
               onClick={() =>
                 setSceneSettings((current) => ({
                   ...current,
@@ -461,6 +534,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
             <Button
               size="sm"
               variant={sceneSettings.showParticles ? "default" : "outline"}
+              aria-pressed={sceneSettings.showParticles}
               onClick={() =>
                 setSceneSettings((current) => ({
                   ...current,
@@ -474,6 +548,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
             <Button
               size="sm"
               variant={sceneSettings.showMovementTrails ? "default" : "outline"}
+              aria-pressed={sceneSettings.showMovementTrails}
               onClick={() =>
                 setSceneSettings((current) => ({
                   ...current,
@@ -493,7 +568,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
               variant={layoutEditMode ? "default" : "outline"}
               onClick={() =>
                 layoutEditMode
-                  ? handleCancelLayoutEdit()
+                  ? requestExitLayoutEdit()
                   : handleStartLayoutEdit()
               }
               data-testid="roster-edit-layout"
@@ -530,6 +605,25 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
         </div>
       </div>
 
+      {loadError ? (
+        <div
+          className="flex items-center justify-between gap-3 border-b border-destructive/30 bg-destructive/10 px-4 py-2"
+          data-testid="roster-load-error"
+        >
+          <p className="text-sm text-destructive">
+            Could not refresh roster: {loadError}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void loadRoster()}
+            data-testid="roster-load-retry"
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-[7] p-4">
           {!rosterReady && loading ? (
@@ -557,10 +651,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                     focusAgentId={focusAgentId}
                     sceneSettings={sceneSettings}
                     usageDisplay={usageDisplay}
-                    onSelectAgent={(agent) => {
-                      setSelectedAgent(agent);
-                      setFocusAgentId(agent.id);
-                    }}
+                    onSelectAgent={handleSelectAgent}
                     onFocusAgent={(agent) => setFocusAgentId(agent.id)}
                     onDeselect={() => setSelectedAgent(null)}
                     onMoveAgent={(agentId, x, y) =>
@@ -575,7 +666,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                   saving={savingLayout}
                   onChange={setDraftLayout}
                   onSave={() => void handleSaveLayout()}
-                  onCancel={handleCancelLayoutEdit}
+                  onCancel={requestExitLayoutEdit}
                   onReset={handleResetLayoutDraft}
                 />
               ) : null}
@@ -622,11 +713,12 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                       key={agent.id}
                       agent={agent}
                       selected={selectedAgent?.id === agent.id}
-                      onSelect={() => setSelectedAgent(agent)}
+                      duration={activeDurations.get(agent.id) ?? null}
+                      onSelect={() => handleSelectAgent(agent)}
                       onInvoke={() =>
                         void handleInvoke(
                           agent.id,
-                          `Help with ${agent.role.toLowerCase()} work`,
+                          defaultInvokePrompt(agent.role),
                         )
                       }
                     />
@@ -656,12 +748,15 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
           selectedAgentId={selectedAgent?.id ?? null}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
+          activeDurations={activeDurations}
           onSearchChange={setSearchQuery}
           onStatusFilterChange={setStatusFilter}
-          onSelectAgent={setSelectedAgent}
-          onInvokeAgent={(agentId) =>
-            void handleInvoke(agentId, "Help with assigned work")
-          }
+          onSelectAgent={handleSelectAgent}
+          onInvokeAgent={(agentId) => {
+            const agent = agents.find((entry) => entry.id === agentId);
+            if (!agent) return;
+            void handleInvoke(agentId, defaultInvokePrompt(agent.role));
+          }}
         />
       </div>
 
@@ -683,6 +778,28 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
           void loadRoster();
         }}
       />
+
+      <AlertDialog open={layoutDiscardOpen} onOpenChange={setLayoutDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard layout changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Unsaved zone splits and names will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="roster-layout-discard-cancel">
+              Keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelLayoutEdit}
+              data-testid="roster-layout-discard-confirm"
+            >
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

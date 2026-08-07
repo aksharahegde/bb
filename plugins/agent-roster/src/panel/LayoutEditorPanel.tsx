@@ -150,7 +150,7 @@ export function LayoutEditorPanel({
             <div
               key={zoneId}
               className={cn(
-                "absolute border text-[10px] font-medium text-muted-foreground",
+                "absolute border text-xs font-medium text-muted-foreground",
                 zoneTone(zoneId),
               )}
               style={{
@@ -169,25 +169,29 @@ export function LayoutEditorPanel({
         <button
           type="button"
           aria-label="Adjust column split"
-          className="absolute bottom-0 top-0 z-10 w-2 -translate-x-1/2 cursor-col-resize bg-primary/40 hover:bg-primary/70"
+          className="absolute bottom-0 top-0 z-10 flex w-4 -translate-x-1/2 cursor-col-resize items-stretch justify-center px-1"
           style={{ left: `${columnPercent}%` }}
           onPointerDown={(event) => {
             event.preventDefault();
             startDrag("column");
           }}
           data-testid="roster-layout-column-handle"
-        />
+        >
+          <span className="w-1 bg-primary/40 hover:bg-primary/70" />
+        </button>
         <button
           type="button"
           aria-label="Adjust row split"
-          className="absolute left-0 right-0 z-10 h-2 -translate-y-1/2 cursor-row-resize bg-primary/40 hover:bg-primary/70"
+          className="absolute left-0 right-0 z-10 flex h-4 -translate-y-1/2 cursor-row-resize flex-col items-stretch justify-center py-1"
           style={{ top: `${rowPercent}%` }}
           onPointerDown={(event) => {
             event.preventDefault();
             startDrag("row");
           }}
           data-testid="roster-layout-row-handle"
-        />
+        >
+          <span className="h-1 bg-primary/40 hover:bg-primary/70" />
+        </button>
       </div>
       <div className="space-y-3">
         {LAYOUT_ZONE_IDS.map((zoneId) => (

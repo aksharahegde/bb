@@ -10,11 +10,10 @@ import {
 } from "@bb/shared-ui/select";
 import { cn } from "@bb/shared-ui/lib/utils";
 import type { AgentStatus, RosterAgent, RosterEvent } from "../types.js";
-import { isAgentInvokable } from "../lifecycle.js";
+import { isAgentInvokable, isAgentActive } from "../lifecycle.js";
 import { getCharacterPreset } from "../scene/characters/presets.js";
 import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
 import { zoneLabel } from "./roster-labels.js";
-import { useActiveDuration } from "./AgentFlyout.js";
 
 type StatusFilter = AgentStatus | "all";
 
@@ -45,32 +44,31 @@ function formatEventTime(at: string): string {
 function AgentRosterCard({
   agent,
   selected,
+  duration,
   onSelect,
   onInvoke,
 }: {
   agent: RosterAgent;
   selected: boolean;
+  duration: string | null;
   onSelect: () => void;
   onInvoke: () => void;
 }) {
-  const duration = useActiveDuration(agent.active_since);
-  const isActive =
-    agent.spatial_state.status === "working" ||
-    agent.spatial_state.status === "thinking";
+  const isActive = isAgentActive(agent);
 
   return (
     <div
       className={cn(
-        "w-full rounded-lg border p-3",
+        "w-full rounded-lg border p-3 motion-reduce:transition-none",
         selected
           ? "border-primary/40 bg-primary/5"
-          : "border-border",
+          : "border-border transition-colors",
       )}
       data-testid={`roster-sidebar-row-${agent.id}`}
     >
       <button
         type="button"
-        className="w-full text-left transition-colors hover:opacity-90"
+        className="w-full text-left hover:opacity-90"
         onClick={onSelect}
       >
         <div className="flex items-start gap-2">
@@ -83,18 +81,18 @@ function AgentRosterCard({
               <Badge
                 variant="outline"
                 className={cn(
-                  "shrink-0 text-[9px] capitalize",
+                  "shrink-0 text-xs capitalize",
                   statusPillClass(agent.spatial_state.status),
                 )}
               >
                 {agent.spatial_state.status}
               </Badge>
             </div>
-            <div className="truncate text-[10px] text-muted-foreground">
+            <div className="truncate text-xs text-muted-foreground">
               {agent.role} · {zoneLabel(agent.spatial_state.zone)}
             </div>
             {isActive && duration ? (
-              <div className="mt-1 text-[10px] tabular-nums text-success">
+              <div className="mt-1 text-xs tabular-nums text-success">
                 Running {duration}
               </div>
             ) : null}
@@ -122,6 +120,7 @@ export function RosterSidebar({
   selectedAgentId,
   searchQuery,
   statusFilter,
+  activeDurations,
   onSearchChange,
   onStatusFilterChange,
   onSelectAgent,
@@ -132,6 +131,7 @@ export function RosterSidebar({
   selectedAgentId: string | null;
   searchQuery: string;
   statusFilter: StatusFilter;
+  activeDurations: Map<string, string>;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: StatusFilter) => void;
   onSelectAgent: (agent: RosterAgent) => void;
@@ -156,7 +156,7 @@ export function RosterSidebar({
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="idle">Idle</SelectItem>
-            <SelectItem value="working">Active</SelectItem>
+            <SelectItem value="working">Working</SelectItem>
             <SelectItem value="thinking">Thinking</SelectItem>
             <SelectItem value="error">Error</SelectItem>
             <SelectItem value="offline">Offline</SelectItem>
@@ -179,6 +179,7 @@ export function RosterSidebar({
                 key={agent.id}
                 agent={agent}
                 selected={selectedAgentId === agent.id}
+                duration={activeDurations.get(agent.id) ?? null}
                 onSelect={() => onSelectAgent(agent)}
                 onInvoke={() => onInvokeAgent(agent.id)}
               />
@@ -193,18 +194,24 @@ export function RosterSidebar({
           {events.length === 0 ? (
             <p className="text-xs text-muted-foreground">No events yet.</p>
           ) : (
-            events.map((event) => (
-              <div
-                key={event.id}
-                className="rounded-md border border-border bg-muted/20 px-2 py-1.5 text-[11px]"
-                data-testid={`roster-event-${event.id}`}
-              >
-                <span className="font-mono text-muted-foreground">
-                  {formatEventTime(event.at)}
-                </span>
-                <span className="text-foreground"> — {event.message}</span>
-              </div>
-            ))
+            <ul
+              className="space-y-2"
+              aria-live="polite"
+              aria-label="Live roster events"
+            >
+              {events.map((event) => (
+                <li
+                  key={event.id}
+                  className="rounded-md border border-border bg-muted/20 px-2 py-1.5 text-xs"
+                  data-testid={`roster-event-${event.id}`}
+                >
+                  <span className="font-mono text-muted-foreground">
+                    {formatEventTime(event.at)}
+                  </span>
+                  <span className="text-foreground"> — {event.message}</span>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>

@@ -57,6 +57,9 @@ export function AgentFormDialog({
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const toolsLocked = isEdit && agent ? isAgentActive(agent) : false;
+  const nameId = "roster-agent-name";
+  const roleId = "roster-agent-role";
+  const promptId = "roster-agent-prompt";
 
   useEffect(() => {
     if (!open) return;
@@ -139,24 +142,33 @@ export function AgentFormDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Name</label>
+            <label htmlFor={nameId} className="text-sm font-medium">
+              Name
+            </label>
             <Input
+              id={nameId}
               value={name}
               onChange={(event) => setName(event.target.value)}
               data-testid="roster-create-name-input"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Role</label>
+            <label htmlFor={roleId} className="text-sm font-medium">
+              Role
+            </label>
             <Input
+              id={roleId}
               value={role}
               onChange={(event) => setRole(event.target.value)}
               data-testid="roster-create-role-input"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">System prompt</label>
+            <label htmlFor={promptId} className="text-sm font-medium">
+              System prompt
+            </label>
             <Textarea
+              id={promptId}
               value={systemPrompt}
               onChange={(event) => setSystemPrompt(event.target.value)}
               rows={4}
@@ -211,6 +223,7 @@ export function AgentFormDialog({
                     "flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-sm",
                     toolsLocked && "opacity-60",
                   )}
+                  data-testid={`roster-create-tool-${tool.id}`}
                 >
                   <input
                     type="checkbox"
@@ -234,7 +247,13 @@ export function AgentFormDialog({
             }
             data-testid={isEdit ? "roster-edit-submit" : "roster-create-submit"}
           >
-            {isEdit ? "Save Changes" : "Create Agent"}
+            {submitting
+              ? isEdit
+                ? "Saving…"
+                : "Creating…"
+              : isEdit
+                ? "Save Changes"
+                : "Create Agent"}
           </Button>
         </DialogFooter>
       </DialogContent>

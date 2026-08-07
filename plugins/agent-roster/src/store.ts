@@ -299,8 +299,23 @@ export class RosterStore {
 
     const agents = await this.listAgents(projectId);
     const updates = reconcileAgentPositions(layout, agents);
-    for (const update of updates) {
-      await this.updateAgentSpatial(projectId, update.agentId, update.spatial);
+    if (updates.length > 0) {
+      await this.mutateAgents(projectId, (document) => {
+        for (const update of updates) {
+          const index = document.agents.findIndex(
+            (agent) => agent.id === update.agentId,
+          );
+          if (index < 0) continue;
+          const current = document.agents[index]!;
+          document.agents[index] = {
+            ...current,
+            spatial_state: {
+              ...current.spatial_state,
+              ...update.spatial,
+            },
+          };
+        }
+      });
     }
 
     await this.appendEvent(projectId, {

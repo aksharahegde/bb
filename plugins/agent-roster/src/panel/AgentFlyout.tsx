@@ -20,6 +20,7 @@ import {
 } from "@bb/shared-ui/select";
 import { Textarea } from "@bb/shared-ui/textarea";
 import type { RosterAgent } from "../types.js";
+import { agentZoneToLayoutZoneId } from "../spatial.js";
 import { getCharacterPreset } from "../scene/characters/presets.js";
 import { CharacterPresetSilhouette } from "./CharacterPresetSilhouette.js";
 import { isAgentActive, isAgentInvokable } from "../lifecycle.js";
@@ -53,6 +54,15 @@ export function AgentFlyout({
   const agentEvents = events.filter((event) => event.agent_id === agent.id);
   const isActive = isAgentActive(agent);
   const isOffline = agent.spatial_state.status === "offline";
+  const currentZoneId = agentZoneToLayoutZoneId(agent.spatial_state.zone);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return (
     <div
@@ -66,12 +76,18 @@ export function AgentFlyout({
           </div>
           <div>
             <div className="text-sm font-semibold">{agent.name}</div>
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-xs">
               {agent.role}
             </Badge>
           </div>
         </div>
-        <Button size="sm" variant="ghost" onClick={onClose}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onClose}
+          aria-label="Close agent details"
+          data-testid="roster-flyout-close"
+        >
           Close
         </Button>
       </div>
@@ -86,9 +102,9 @@ export function AgentFlyout({
         </div>
         <div className="space-y-1">
           <div className="font-medium text-muted-foreground">Move to zone</div>
-          <Select onValueChange={onAssignZone}>
+          <Select value={currentZoneId} onValueChange={onAssignZone}>
             <SelectTrigger data-testid="roster-flyout-zone-select">
-              <SelectValue placeholder="Choose zone…" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {ZONE_OPTIONS.map((zone) => (
@@ -116,7 +132,7 @@ export function AgentFlyout({
             <div className="mb-1 font-medium text-muted-foreground">
               Recent activity
             </div>
-            <ul className="max-h-20 space-y-1 overflow-y-auto text-[10px] text-muted-foreground">
+            <ul className="max-h-20 space-y-1 overflow-y-auto text-xs text-muted-foreground">
               {agentEvents.slice(0, 5).map((event) => (
                 <li key={event.id}>{event.message}</li>
               ))}
@@ -159,8 +175,8 @@ export function AgentFlyout({
           <AlertDialogHeader>
             <AlertDialogTitle>Archive {agent.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Archived agents are hidden from the office view but remain in the
-              roster list.
+              Archived agents are marked offline and hidden from the office
+              view. They remain in the roster list when you show all statuses.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -179,29 +195,4 @@ export function AgentFlyout({
       </AlertDialog>
     </div>
   );
-}
-
-function formatDuration(activeSince: string | null): string | null {
-  if (!activeSince) return null;
-  const elapsedMs = Date.now() - new Date(activeSince).getTime();
-  const seconds = Math.max(0, Math.floor(elapsedMs / 1000));
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  if (minutes === 0) return `${remainder}s`;
-  return `${minutes}m ${remainder}s`;
-}
-
-export function useActiveDuration(activeSince: string | null): string | null {
-  const [label, setLabel] = useState(() => formatDuration(activeSince));
-
-  useEffect(() => {
-    setLabel(formatDuration(activeSince));
-    if (!activeSince) return;
-    const timer = window.setInterval(() => {
-      setLabel(formatDuration(activeSince));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [activeSince]);
-
-  return label;
 }

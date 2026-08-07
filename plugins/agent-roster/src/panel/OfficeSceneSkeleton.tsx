@@ -1,7 +1,7 @@
 export function OfficeSceneSkeleton() {
   return (
     <div
-      className="flex h-full min-h-[480px] animate-pulse flex-col gap-3 rounded-lg border border-border bg-card p-4"
+      className="flex h-full min-h-[480px] animate-pulse flex-col gap-3 rounded-lg border border-border bg-card p-4 motion-reduce:animate-none"
       data-testid="roster-office-canvas-loading"
     >
       <div className="h-6 w-40 rounded bg-muted" />

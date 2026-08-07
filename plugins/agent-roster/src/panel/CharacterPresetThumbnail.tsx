@@ -19,12 +19,14 @@ export function CharacterPresetThumbnail({
         selected ? "border-primary bg-primary/10" : "border-border",
       )}
       onClick={onSelect}
+      aria-label={`${preset.label} character preset`}
+      aria-pressed={selected}
       data-testid={`roster-create-avatar-${preset.id}`}
     >
       <div className="h-14 w-10 overflow-hidden rounded bg-muted/40">
         <CharacterPresetSilhouette preset={preset} />
       </div>
-      <span className="w-full truncate text-center text-[9px] text-muted-foreground">
+      <span className="w-full truncate text-center text-xs text-muted-foreground">
         {preset.label}
       </span>
     </button>
