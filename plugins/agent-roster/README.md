@@ -31,3 +31,14 @@ Open **Agent Roaster** from the plugin nav panel for:
 | `list_roster_agents` | List agents with spatial state |
 
 Seed agents (Bug Hunter, Refactor Guru, Doc Specialist) are created on first open.
+
+## CLI
+
+```bash
+bb roster list
+bb roster create --name "Bug Hunter" --role Debugger --prompt "Find bugs"
+bb roster invoke <agent-id> "Review auth flow"
+bb roster layout save --column-split 10 --row-split 6
+```
+
+See `bb roster help` for all subcommands.

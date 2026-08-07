@@ -12,6 +12,7 @@ import {
   updateZoneNames,
 } from "./src/layout-editor.js";
 import { RosterStore } from "./src/store.js";
+import { registerRosterCli } from "./src/cli.js";
 import { AGENT_STATUSES } from "./src/types.js";
 
 export { REALTIME_CHANNEL, rosterRpcContract } from "./contract.js";
@@ -472,6 +473,18 @@ export default async function plugin(bb: BbPluginApi) {
     ],
     skills: ["agent-roster"],
   }));
+
+  registerRosterCli(bb, store, async (args) => {
+    const result = await invokeAgentThread({
+      projectId: args.projectId,
+      agentId: args.agentId,
+      prompt: args.prompt,
+      taskId: null,
+      parentThreadId: null,
+    });
+    publishChanged(args.projectId);
+    return { threadId: result.threadId };
+  });
 
   bb.events.on("thread.active", async ({ thread }) => {
     const agent = await store.findAgentByThread(thread.projectId, thread.id);
