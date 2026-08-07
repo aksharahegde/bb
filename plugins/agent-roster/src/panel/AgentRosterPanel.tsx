@@ -39,6 +39,7 @@ import { CreateAgentDialog } from "./CreateAgentDialog.js";
 import { AgentFormDialog } from "./AgentFormDialog.js";
 import { LayoutEditorPanel } from "./LayoutEditorPanel.js";
 import { DEFAULT_OFFICE_LAYOUT } from "../spatial.js";
+import type { UsageDisplay } from "../usage-display.js";
 import {
   DEFAULT_SCENE_SETTINGS,
   type SceneSettings,
@@ -137,6 +138,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   const [sceneSettings, setSceneSettings] =
     useState<SceneSettings>(DEFAULT_SCENE_SETTINGS);
   const [focusAgentId, setFocusAgentId] = useState<string | null>(null);
+  const [usageDisplay, setUsageDisplay] = useState<UsageDisplay | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProjects = useCallback(async () => {
@@ -181,6 +183,24 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   useEffect(() => {
     void loadRoster();
   }, [loadRoster]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadUsage = async (): Promise<void> => {
+      try {
+        const result = await rpc.call("getUsageDisplay", null);
+        if (!cancelled) setUsageDisplay(result.usage);
+      } catch {
+        if (!cancelled) setUsageDisplay(null);
+      }
+    };
+    void loadUsage();
+    const timer = window.setInterval(() => void loadUsage(), 120_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [rpc]);
 
   useRealtime(REALTIME_CHANNEL, (payload) => {
     if (
@@ -456,6 +476,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                     selectedAgentId={selectedAgent?.id ?? null}
                     focusAgentId={focusAgentId}
                     sceneSettings={sceneSettings}
+                    usageDisplay={usageDisplay}
                     onSelectAgent={(agent) => {
                       setSelectedAgent(agent);
                       setFocusAgentId(agent.id);

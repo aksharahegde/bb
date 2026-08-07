@@ -254,6 +254,20 @@ export const rosterRpcContract = defineRpcContract({
       })
       .strict(),
   },
+  getUsageDisplay: {
+    input: z.null(),
+    output: z
+      .object({
+        usage: z
+          .object({
+            label: z.string(),
+            usedPercent: z.number().nullable(),
+            available: z.boolean(),
+          })
+          .strict(),
+      })
+      .strict(),
+  },
 });
 
 export type RosterRpcContract = typeof rosterRpcContract;

@@ -83,6 +83,7 @@ describe("agent-roster plugin", () => {
     ]);
     expect(harness.registrations.rpcMethods).toContain("listAgents");
     expect(harness.registrations.rpcMethods).toContain("saveOfficeLayout");
+    expect(harness.registrations.rpcMethods).toContain("getUsageDisplay");
     expect(harness.registrations.cli?.name).toBe("roster");
   });
 
@@ -118,6 +119,36 @@ describe("agent-roster plugin", () => {
       agents: Array<{ name: string }>;
     };
     expect(list.agents.some((agent) => agent.name === "CLI Tester")).toBe(true);
+  });
+
+  it("summarizes provider usage via rpc", async () => {
+    const { bb, harness } = createFakePluginHost({
+      pluginId: "agent-roster",
+      sdk: {
+        system: {
+          usageLimits: async () => ({
+            codex: { status: "not_installed" },
+            claudeCode: {
+              status: "ok",
+              accountEmail: null,
+              planLabel: "Pro",
+              windows: [{ label: "Weekly", usedPercent: 55, resetsAt: null }],
+            },
+            cursor: { status: "unauthenticated" },
+          }),
+        },
+      },
+    });
+    await plugin(bb);
+
+    const result = await harness.behavior.callRpc("getUsageDisplay", null);
+    expect(result).toEqual({
+      usage: {
+        available: true,
+        label: "Weekly 55%",
+        usedPercent: 55,
+      },
+    });
   });
 
   it("invokes an agent and returns it to idle on thread.idle", async () => {

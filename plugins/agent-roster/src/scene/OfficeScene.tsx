@@ -2,17 +2,22 @@ import { ContactShadows } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useCallback, useMemo } from "react";
 import type { CollaborationGroup, OfficeLayout, RosterAgent } from "../types.js";
+import type { UsageDisplay } from "../usage-display.js";
 import { AnimatedAgentGroup } from "./agents/AnimatedAgentGroup.js";
 import { AgentStation } from "./agents/AgentStation.js";
 import { CollaborationBeams } from "./agents/CollaborationBeams.js";
-import { gridToWorld } from "./coordinates.js";
+import { AmbientProps } from "./ambient/AmbientProps.js";
+import { CELL_SIZE } from "./constants.js";
+import { gridToWorld, zoneCenter } from "./coordinates.js";
+import { dayNightSkyTint } from "./day-night.js";
 import { DragController } from "./DragController.js";
 import { DragProvider } from "./DragContext.js";
+import { UsageMonitor } from "./furniture/UsageMonitor.js";
 import { useReducedMotion } from "./hooks/useReducedMotion.js";
 import { useSceneTheme } from "./hooks/useSceneTheme.js";
 import { OfficeCamera } from "./OfficeCamera.js";
 import { OfficeFloor, ZoneDecorations } from "./OfficeFloor.js";
-import { SceneLighting } from "./SceneLighting.js";
+import { SceneLighting, useDayNightFactor } from "./SceneLighting.js";
 import type { SceneSettings } from "./scene-settings.js";
 
 export interface OfficeSceneProps {
@@ -22,6 +27,7 @@ export interface OfficeSceneProps {
   selectedAgentId: string | null;
   focusAgentId: string | null;
   sceneSettings: SceneSettings;
+  usageDisplay: UsageDisplay | null;
   onSelectAgent: (agent: RosterAgent) => void;
   onFocusAgent: (agent: RosterAgent) => void;
   onDeselect: () => void;
@@ -35,6 +41,7 @@ export default function OfficeScene({
   selectedAgentId,
   focusAgentId,
   sceneSettings,
+  usageDisplay,
   onSelectAgent,
   onFocusAgent,
   onDeselect,
@@ -42,6 +49,7 @@ export default function OfficeScene({
 }: OfficeSceneProps) {
   const theme = useSceneTheme();
   const reducedMotion = useReducedMotion();
+  const dayNightFactor = useDayNightFactor();
 
   const handleMove = useCallback(
     (agentId: string, x: number, y: number) => {
@@ -50,10 +58,13 @@ export default function OfficeScene({
     [onMoveAgent],
   );
 
-  const background = useMemo(
-    () => `#${theme.floor.clone().lerp(theme.ink, 0.04).getHexString()}`,
-    [theme.floor, theme.ink],
-  );
+  const background = useMemo(() => {
+    const tint = dayNightSkyTint(dayNightFactor);
+    return `#${theme.floor
+      .clone()
+      .lerp(theme.ink, 0.04 + tint.warmth * 0.08)
+      .getHexString()}`;
+  }, [theme.floor, theme.ink, dayNightFactor]);
 
   const focusTarget = useMemo(() => {
     const agent = agents.find((entry) => entry.id === focusAgentId);
@@ -65,6 +76,14 @@ export default function OfficeScene({
     );
   }, [agents, focusAgentId, layout.grid_dimensions]);
 
+  const usageMonitorPosition = useMemo((): [number, number, number] | null => {
+    const desks = layout.zones.find((zone) => zone.id === "fixed_desks");
+    if (!desks) return null;
+    const [centerX, , centerZ] = zoneCenter(desks.bounds, layout.grid_dimensions);
+    const halfWidth = (desks.bounds.width * CELL_SIZE) / 2;
+    return [centerX - halfWidth + 0.5, 1.05, centerZ];
+  }, [layout]);
+
   return (
     <Canvas
       shadows
@@ -75,7 +94,7 @@ export default function OfficeScene({
     >
       <color attach="background" args={[background]} />
       <OfficeCamera layout={layout} focusTarget={focusTarget} />
-      <SceneLighting theme={theme} />
+      <SceneLighting theme={theme} dayNightFactor={dayNightFactor} />
       <ContactShadows
         position={[0, 0.02, 0]}
         opacity={0.35}
@@ -90,6 +109,18 @@ export default function OfficeScene({
           showZoneLabels={sceneSettings.showZoneLabels}
         />
         <ZoneDecorations layout={layout} theme={theme} />
+        <AmbientProps
+          layout={layout}
+          theme={theme}
+          reducedMotion={reducedMotion}
+        />
+        {usageMonitorPosition ? (
+          <UsageMonitor
+            position={usageMonitorPosition}
+            theme={theme}
+            usage={usageDisplay}
+          />
+        ) : null}
         <CollaborationBeams
           layout={layout}
           agents={agents}

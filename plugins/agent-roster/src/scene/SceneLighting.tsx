@@ -1,10 +1,24 @@
+import { useEffect, useState } from "react";
 import type { SceneTheme } from "./hooks/useSceneTheme.js";
+import { localDayNightFactor } from "./day-night.js";
 import { sceneLightLevels } from "./scene-settings.js";
 
-export function SceneLighting({ theme }: { theme: SceneTheme }) {
-  const levels = sceneLightLevels(theme);
-  const sky = `#${theme.floor.clone().lerp(theme.primary, 0.08).getHexString()}`;
-  const ground = `#${theme.floor.clone().lerp(theme.ink, 0.12).getHexString()}`;
+export function SceneLighting({
+  theme,
+  dayNightFactor,
+}: {
+  theme: SceneTheme;
+  dayNightFactor: number;
+}) {
+  const levels = sceneLightLevels(theme, dayNightFactor);
+  const sky = `#${theme.floor
+    .clone()
+    .lerp(theme.primary, 0.08 + levels.warmth * 0.12)
+    .getHexString()}`;
+  const ground = `#${theme.floor
+    .clone()
+    .lerp(theme.ink, 0.12 + levels.warmth * 0.08)
+    .getHexString()}`;
 
   return (
     <>
@@ -16,6 +30,7 @@ export function SceneLighting({ theme }: { theme: SceneTheme }) {
       <directionalLight
         position={[8, 12, 6]}
         intensity={levels.directional}
+        color={`#${theme.floor.clone().lerp(theme.warning, levels.warmth * 0.25).getHexString()}`}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -30,4 +45,17 @@ export function SceneLighting({ theme }: { theme: SceneTheme }) {
       />
     </>
   );
+}
+
+export function useDayNightFactor(): number {
+  const [factor, setFactor] = useState(() => localDayNightFactor());
+
+  useEffect(() => {
+    const refresh = (): void => setFactor(localDayNightFactor());
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return factor;
 }

@@ -12,19 +12,26 @@ export const DEFAULT_SCENE_SETTINGS: SceneSettings = {
   showMovementTrails: true,
 };
 
-export function sceneLightLevels(theme: SceneTheme): {
+export function sceneLightLevels(
+  theme: SceneTheme,
+  dayNightFactor = 1,
+): {
   ambient: number;
   directional: number;
   hemisphere: number;
+  warmth: number;
 } {
   const luminance =
     theme.floor.r * 0.2126 +
     theme.floor.g * 0.7152 +
     theme.floor.b * 0.0722;
-  const dayFactor = luminance > 0.45 ? 1 : 0.82;
+  const themeFactor = luminance > 0.45 ? 1 : 0.82;
+  const daylight = Math.max(0.35, Math.min(1, dayNightFactor));
+  const warmth = 1 - daylight;
   return {
-    ambient: 0.42 * dayFactor,
-    directional: 1.05 * dayFactor,
-    hemisphere: 0.28 * dayFactor,
+    ambient: 0.42 * themeFactor * (0.7 + daylight * 0.3),
+    directional: 1.05 * themeFactor * (0.55 + daylight * 0.45),
+    hemisphere: 0.28 * themeFactor * (0.65 + daylight * 0.35),
+    warmth,
   };
 }

@@ -13,6 +13,7 @@ import {
 } from "./src/layout-editor.js";
 import { RosterStore } from "./src/store.js";
 import { registerRosterCli } from "./src/cli.js";
+import { summarizeProviderUsage } from "./src/usage-display.js";
 import { AGENT_STATUSES } from "./src/types.js";
 
 export { REALTIME_CHANNEL, rosterRpcContract } from "./contract.js";
@@ -253,6 +254,20 @@ export default async function plugin(bb: BbPluginApi) {
       const result = await store.resetOfficeLayout(input.projectId);
       publishChanged(input.projectId);
       return result;
+    },
+    async getUsageDisplay() {
+      try {
+        const usage = await bb.sdk.system.usageLimits();
+        return { usage: summarizeProviderUsage(usage) };
+      } catch {
+        return {
+          usage: {
+            label: "Usage unavailable",
+            usedPercent: null,
+            available: false,
+          },
+        };
+      }
     },
   });
 
