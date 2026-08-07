@@ -1,4 +1,15 @@
 import { useEffect, useState } from "react";
+import { Badge } from "@bb/shared-ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@bb/shared-ui/alert-dialog";
 import { Button } from "@bb/shared-ui/button";
 import {
   Select,
@@ -8,8 +19,8 @@ import {
   SelectValue,
 } from "@bb/shared-ui/select";
 import { Textarea } from "@bb/shared-ui/textarea";
-import { Badge } from "@bb/shared-ui/badge";
 import type { RosterAgent } from "../types.js";
+import { isAgentActive } from "../lifecycle.js";
 
 const ZONE_OPTIONS = [
   { id: "fixed_desks", label: "Desks" },
@@ -24,15 +35,22 @@ export function AgentFlyout({
   onClose,
   onInvoke,
   onAssignZone,
+  onEdit,
+  onArchive,
 }: {
   agent: RosterAgent;
   events: Array<{ id: string; message: string; at: string; agent_id: string | null }>;
   onClose: () => void;
   onInvoke: (prompt: string) => void;
   onAssignZone: (zoneId: string) => void;
+  onEdit: () => void;
+  onArchive: () => void;
 }) {
   const [prompt, setPrompt] = useState("");
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const agentEvents = events.filter((event) => event.agent_id === agent.id);
+  const isActive = isAgentActive(agent);
+  const isOffline = agent.spatial_state.status === "offline";
 
   return (
     <div
@@ -104,13 +122,57 @@ export function AgentFlyout({
         <Button
           size="sm"
           className="w-full"
-          disabled={prompt.trim().length === 0}
+          disabled={prompt.trim().length === 0 || isOffline}
           onClick={() => onInvoke(prompt.trim())}
           data-testid="roster-flyout-assign-task"
         >
           Assign Task
         </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            onClick={onEdit}
+            data-testid="roster-flyout-edit"
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            disabled={isActive || isOffline}
+            onClick={() => setArchiveOpen(true)}
+            data-testid="roster-flyout-archive"
+          >
+            Archive
+          </Button>
+        </div>
       </div>
+      <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive {agent.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Archived agents are hidden from the office view but remain in the
+              roster list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setArchiveOpen(false);
+                onArchive();
+              }}
+              data-testid="roster-flyout-archive-confirm"
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

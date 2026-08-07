@@ -97,6 +97,15 @@ export interface RegisterAgentInput {
   default_model?: string;
 }
 
+export interface UpdateAgentInput {
+  name: string;
+  role: string;
+  system_prompt: string;
+  avatar: string;
+  allowed_tools: string[];
+  default_model: string;
+}
+
 export const AVATAR_OPTIONS = [
   "🐛",
   "🔧",

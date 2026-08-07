@@ -158,6 +158,23 @@ export default async function plugin(bb: BbPluginApi) {
       publishChanged(input.projectId);
       return { agent };
     },
+    async updateAgent(input) {
+      const agent = await store.updateAgent(input.projectId, input.agentId, {
+        name: input.name,
+        role: input.role,
+        system_prompt: input.system_prompt,
+        avatar: input.avatar,
+        allowed_tools: input.allowed_tools,
+        default_model: input.default_model,
+      });
+      publishChanged(input.projectId);
+      return { agent };
+    },
+    async archiveAgent(input) {
+      const agent = await store.archiveAgent(input.projectId, input.agentId);
+      publishChanged(input.projectId);
+      return { agent };
+    },
     async invokeAgent(input) {
       return invokeAgentThread(input);
     },
@@ -324,9 +341,64 @@ export default async function plugin(bb: BbPluginApi) {
     },
   });
 
+  bb.agents.registerTool({
+    name: "update_roster_agent",
+    description:
+      "Update a roster agent profile in .bb/roster/agents.json. Tool access cannot change while the agent is active.",
+    parameters: z
+      .object({
+        agent_id: z.string().min(1),
+        name: z.string().min(1),
+        role: z.string().min(1),
+        system_prompt: z.string().min(1),
+        avatar: z.string().min(1),
+        allowed_tools: z.array(z.string()),
+        default_model: z.string().min(1),
+      })
+      .strict(),
+    async execute(input, ctx) {
+      try {
+        const agent = await store.updateAgent(ctx.projectId, input.agent_id, {
+          name: input.name,
+          role: input.role,
+          system_prompt: input.system_prompt,
+          avatar: input.avatar,
+          allowed_tools: input.allowed_tools,
+          default_model: input.default_model,
+        });
+        publishChanged(ctx.projectId);
+        return toolJson({ id: agent.id, name: agent.name });
+      } catch (error) {
+        return toolError(error instanceof Error ? error.message : String(error));
+      }
+    },
+  });
+
+  bb.agents.registerTool({
+    name: "archive_roster_agent",
+    description:
+      "Archive a roster agent by setting status to offline. Active agents cannot be archived.",
+    parameters: z
+      .object({
+        agent_id: z.string().min(1),
+      })
+      .strict(),
+    async execute(input, ctx) {
+      try {
+        const agent = await store.archiveAgent(ctx.projectId, input.agent_id);
+        publishChanged(ctx.projectId);
+        return toolJson({ id: agent.id, status: agent.spatial_state.status });
+      } catch (error) {
+        return toolError(error instanceof Error ? error.message : String(error));
+      }
+    },
+  });
+
   bb.agents.configure(() => ({
     tools: [
       "register_roster_agent",
+      "update_roster_agent",
+      "archive_roster_agent",
       "invoke_roster_agent",
       "assign_agent_to_zone",
       "list_roster_agents",

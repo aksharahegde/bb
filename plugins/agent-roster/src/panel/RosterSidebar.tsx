@@ -108,6 +108,7 @@ function AgentRosterCard({
         <Button
           size="sm"
           variant="outline"
+          disabled={agent.spatial_state.status === "offline"}
           onClick={(event) => {
             event.stopPropagation();
             onInvoke();

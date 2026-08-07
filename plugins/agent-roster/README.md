@@ -21,6 +21,8 @@ Open **Agent Roaster** from the plugin nav panel for:
 | Tool | Purpose |
 |------|---------|
 | `register_roster_agent` | Add agent profile and auto-place at desk |
+| `update_roster_agent` | Update agent profile (tools locked while active) |
+| `archive_roster_agent` | Archive agent (sets status to offline) |
 | `invoke_roster_agent` | Spawn hidden thread with agent system prompt |
 | `assign_agent_to_zone` | Reposition agent in a zone |
 | `list_roster_agents` | List agents with spatial state |

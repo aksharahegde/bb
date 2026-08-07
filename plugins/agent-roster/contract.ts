@@ -175,6 +175,30 @@ export const rosterRpcContract = defineRpcContract({
       .strict(),
     output: z.object({ agent: rosterAgentSchema }).strict(),
   },
+  updateAgent: {
+    input: z
+      .object({
+        projectId: z.string(),
+        agentId: z.string(),
+        name: z.string().min(1),
+        role: z.string().min(1),
+        system_prompt: z.string().min(1),
+        avatar: z.string().min(1),
+        allowed_tools: z.array(z.string()),
+        default_model: z.string().min(1),
+      })
+      .strict(),
+    output: z.object({ agent: rosterAgentSchema }).strict(),
+  },
+  archiveAgent: {
+    input: z
+      .object({
+        projectId: z.string(),
+        agentId: z.string(),
+      })
+      .strict(),
+    output: z.object({ agent: rosterAgentSchema }).strict(),
+  },
   updateAgentPrompt: {
     input: z
       .object({

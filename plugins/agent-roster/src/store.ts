@@ -7,6 +7,10 @@ import {
   rosterDirectory,
   type ProjectSource,
 } from "./project-source.js";
+import {
+  assertAgentArchivable,
+  assertToolChangesAllowed,
+} from "./lifecycle.js";
 import { DEFAULT_OFFICE_LAYOUT, findAvailableDesk } from "./spatial.js";
 import { SEED_AGENTS } from "./seed.js";
 import type {
@@ -19,6 +23,7 @@ import type {
   RosterAgent,
   RosterEvent,
   SpatialState,
+  UpdateAgentInput,
 } from "./types.js";
 
 function isMissingFileError(error: unknown): boolean {
@@ -366,6 +371,53 @@ export class RosterStore {
     });
     await this.appendEvent(projectId, {
       message: `${agent.name} joined the office`,
+      agent_id: agent.id,
+    });
+    return agent;
+  }
+
+  async updateAgent(
+    projectId: string,
+    agentId: string,
+    input: UpdateAgentInput,
+  ): Promise<RosterAgent> {
+    const current = await this.readAgent(projectId, agentId);
+    assertToolChangesAllowed(current, input.allowed_tools);
+    await this.mutateAgents(projectId, (document) => {
+      const index = document.agents.findIndex((agent) => agent.id === agentId);
+      if (index < 0) {
+        throw new Error(`Roster agent "${agentId}" was not found`);
+      }
+      const existing = document.agents[index]!;
+      document.agents[index] = {
+        ...existing,
+        name: input.name.trim(),
+        role: input.role.trim(),
+        system_prompt: input.system_prompt.trim(),
+        avatar: input.avatar,
+        allowed_tools: input.allowed_tools,
+        default_model: input.default_model.trim() || existing.default_model,
+      };
+    });
+    const agent = await this.readAgent(projectId, agentId);
+    await this.appendEvent(projectId, {
+      message: `${agent.name} profile updated`,
+      agent_id: agent.id,
+    });
+    return agent;
+  }
+
+  async archiveAgent(projectId: string, agentId: string): Promise<RosterAgent> {
+    const current = await this.readAgent(projectId, agentId);
+    assertAgentArchivable(current);
+    const agent = await this.updateAgentSpatial(
+      projectId,
+      agentId,
+      { status: "offline" },
+      { active_thread_id: null, speech_bubble: null },
+    );
+    await this.appendEvent(projectId, {
+      message: `${agent.name} archived`,
       agent_id: agent.id,
     });
     return agent;

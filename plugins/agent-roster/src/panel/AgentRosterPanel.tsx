@@ -36,6 +36,7 @@ import { AgentFlyout } from "./AgentFlyout.js";
 import { OfficeSceneSkeleton } from "./OfficeSceneSkeleton.js";
 import { RosterSidebar } from "./RosterSidebar.js";
 import { CreateAgentDialog } from "./CreateAgentDialog.js";
+import { AgentFormDialog } from "./AgentFormDialog.js";
 
 const OfficeScene = lazy(() => import("../scene/OfficeScene.js"));
 
@@ -123,6 +124,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<RosterAgent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editAgent, setEditAgent] = useState<RosterAgent | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProjects = useCallback(async () => {
@@ -189,6 +191,14 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
     );
   }, [agents, searchQuery]);
 
+  const spatialAgents = useMemo(
+    () =>
+      filteredAgents.filter(
+        (agent) => agent.spatial_state.status !== "offline",
+      ),
+    [filteredAgents],
+  );
+
   const handleInvoke = async (agentId: string, prompt: string): Promise<void> => {
     if (!project) return;
     try {
@@ -233,6 +243,21 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
         zoneId,
       });
       toast.success("Agent moved");
+      await loadRoster();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleArchiveAgent = async (agentId: string): Promise<void> => {
+    if (!project) return;
+    try {
+      await rpc.call("archiveAgent", {
+        projectId: project.id,
+        agentId,
+      });
+      toast.success("Agent archived");
+      setSelectedAgent(null);
       await loadRoster();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -310,13 +335,13 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
               className="relative h-full min-h-[480px] overflow-hidden rounded-lg border border-border bg-card"
               data-testid="roster-office-canvas"
               role="img"
-              aria-label={`Agent office spatial view, ${filteredAgents.length} agents visible`}
+              aria-label={`Agent office spatial view, ${spatialAgents.length} agents visible`}
             >
               <SceneErrorBoundary onFallback={() => setViewMode("list")}>
                 <Suspense fallback={<OfficeSceneSkeleton />}>
                   <OfficeScene
                     layout={layout}
-                    agents={filteredAgents}
+                    agents={spatialAgents}
                     collaborationGroups={collaborationGroups}
                     selectedAgentId={selectedAgent?.id ?? null}
                     onSelectAgent={setSelectedAgent}
@@ -336,6 +361,8 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                     void handleInvoke(selectedAgent.id, prompt)
                   }
                   onAssignZone={(zoneId) => void handleAssignZone(zoneId)}
+                  onEdit={() => setEditAgent(selectedAgent)}
+                  onArchive={() => void handleArchiveAgent(selectedAgent.id)}
                 />
               ) : null}
             </div>
@@ -360,6 +387,7 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={agent.spatial_state.status === "offline"}
                     onClick={() =>
                       void handleInvoke(
                         agent.id,
@@ -396,6 +424,18 @@ export function AgentRosterPanel(_props: PluginNavPanelProps) {
         onOpenChange={setCreateOpen}
         projectId={project.id}
         onCreated={() => void loadRoster()}
+      />
+      <AgentFormDialog
+        open={editAgent !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditAgent(null);
+        }}
+        projectId={project.id}
+        agent={editAgent}
+        onSaved={() => {
+          setEditAgent(null);
+          void loadRoster();
+        }}
       />
     </div>
   );
