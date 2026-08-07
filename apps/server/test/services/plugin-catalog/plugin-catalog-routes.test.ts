@@ -30,9 +30,9 @@ describe("plugin catalog routes", () => {
     const status = await app.request("/plugin-catalog");
     await expect(status.json()).resolves.toMatchObject({
       catalog: {
-        pluginCount: 13,
+        pluginCount: 14,
         includedPluginCount: 8,
-        optionalPluginCount: 5,
+        optionalPluginCount: 6,
       },
     });
     const search = await app.request("/plugin-catalog/search?q=memory");

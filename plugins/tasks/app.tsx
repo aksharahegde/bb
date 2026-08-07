@@ -8,6 +8,7 @@ export default definePluginApp((app) => {
     title: "Tasks",
     icon: "ListTodo",
     path: "tasks",
+    sidebarPlacement: "primary",
     component: TasksAppShell,
   });
   app.slots.threadPanelAction({

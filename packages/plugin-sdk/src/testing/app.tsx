@@ -619,6 +619,15 @@ function collectRegistrations(
             `${kind}: "headerContent" must be a React component function when set`,
           );
         }
+        if (
+          registration.sidebarPlacement !== undefined &&
+          registration.sidebarPlacement !== "primary" &&
+          registration.sidebarPlacement !== "default"
+        ) {
+          throw new Error(
+            `${kind}: "sidebarPlacement" must be "primary" or "default" when set`,
+          );
+        }
         captured.navPanels.push({
           id,
           title: requireNonEmptyString(kind, "title", registration.title),
@@ -627,6 +636,9 @@ function collectRegistrations(
           component: requireComponent(kind, registration.component),
           ...(registration.headerContent !== undefined
             ? { headerContent: registration.headerContent }
+            : {}),
+          ...(registration.sidebarPlacement !== undefined
+            ? { sidebarPlacement: registration.sidebarPlacement }
             : {}),
         });
       },

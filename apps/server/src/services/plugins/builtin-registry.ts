@@ -126,6 +126,12 @@ export const OFFICIAL_PLUGINS = [
     defaultEnabled: true,
     category: "Workflow management",
   },
+  {
+    name: "decisions",
+    pluginId: "decisions",
+    defaultEnabled: true,
+    category: "Context & knowledge",
+  },
   // Replaces the standard sidebar, so users install it deliberately instead
   // of receiving a disabled registration by default.
   {

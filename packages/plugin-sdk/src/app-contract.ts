@@ -210,6 +210,9 @@ export interface PluginSettingsSectionRegistration {
   component: ComponentType<PluginSettingsSectionProps>;
 }
 
+/** Where a `navPanel` row renders in the app sidebar. */
+export type PluginNavPanelSidebarPlacement = "primary" | "default";
+
 export interface PluginNavPanelRegistration {
   /** Unique within the plugin; letters, digits, `-`, `_`. */
   id: string;
@@ -225,6 +228,12 @@ export interface PluginNavPanelRegistration {
    * throwing headerContent is hidden without breaking the title bar.
    */
   headerContent?: ComponentType<PluginNavPanelProps>;
+  /**
+   * Sidebar row placement. `primary` renders directly below New thread in the
+   * primary-actions block; `default` (the default) renders with the other
+   * plugin nav rows.
+   */
+  sidebarPlacement?: PluginNavPanelSidebarPlacement;
 }
 
 /** Context handed to a `threadPanelAction`'s `run`. */

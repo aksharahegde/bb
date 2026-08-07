@@ -33,7 +33,11 @@ function registrationSet(
   };
 }
 
-function registerPanel(pluginId: string, title: string) {
+function registerPanel(
+  pluginId: string,
+  title: string,
+  options: { sidebarPlacement?: "primary" | "default" } = {},
+) {
   setPluginSlotRegistrations(
     pluginId,
     registrationSet({
@@ -44,6 +48,9 @@ function registerPanel(pluginId: string, title: string) {
           icon: "Puzzle",
           path: "main",
           component: () => null,
+          ...(options.sidebarPlacement !== undefined
+            ? { sidebarPlacement: options.sidebarPlacement }
+            : {}),
         },
       ],
     }),
@@ -54,6 +61,7 @@ function renderSidebarItems(
   options: {
     toolsRoutePath?: string;
     storedOrder?: string[];
+    placement?: "primary" | "default";
   } = {},
 ) {
   const store = createStore();
@@ -66,7 +74,10 @@ function renderSidebarItems(
     <Provider store={store}>
       <MemoryRouter initialEntries={["/"]}>
         <SidebarProvider>
-          <PluginNavSidebarItems toolsRoutePath={options.toolsRoutePath} />
+          <PluginNavSidebarItems
+            toolsRoutePath={options.toolsRoutePath}
+            placement={options.placement}
+          />
         </SidebarProvider>
       </MemoryRouter>
     </Provider>,
@@ -236,5 +247,33 @@ describe("PluginNavSidebarItems", () => {
     expect(
       window.localStorage.getItem("bb.sidebar.pluginPanelOrder") ?? "",
     ).not.toContain("__builtin__/tools");
+  });
+
+  it("renders primary-placement panels in the primary sidebar section", () => {
+    registerPanel("tasks", "Tasks", { sidebarPlacement: "primary" });
+    registerPanel("docs", "Docs");
+
+    renderSidebarItems({ placement: "primary" });
+
+    expect(
+      screen.getByTestId("plugin-nav-sidebar-primary-items"),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Tasks" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Docs" })).toBeNull();
+    expect(screen.queryByTestId("plugin-nav-sidebar-items")).toBeNull();
+  });
+
+  it("keeps primary-placement panels out of the default plugin row list", () => {
+    registerPanel("tasks", "Tasks", { sidebarPlacement: "primary" });
+    registerPanel("docs", "Docs");
+
+    renderSidebarItems();
+
+    expect(screen.getByTestId("plugin-nav-sidebar-items")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Docs" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Tasks" })).toBeNull();
+    expect(
+      screen.queryByTestId("plugin-nav-sidebar-primary-items"),
+    ).toBeNull();
   });
 });

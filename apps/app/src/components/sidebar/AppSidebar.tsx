@@ -404,7 +404,7 @@ export function AppSidebar({
         ) : null}
         <div
           data-testid="app-sidebar-primary-actions"
-          className="shrink-0 px-2 py-2 group-data-[collapsible=icon]:hidden"
+          className="shrink-0 space-y-1 px-2 py-2 group-data-[collapsible=icon]:hidden"
         >
           <ProjectListActionButtons
             splitEnabled={threadSplitsEnabled}
@@ -419,6 +419,11 @@ export function AppSidebar({
               onQueryChange: setThreadSearchQuery,
               query: threadSearchQuery,
             }}
+          />
+          <PluginNavSidebarItems
+            placement="primary"
+            onNavigate={closeOnMobile}
+            splitEnabled={threadSplitsEnabled}
           />
         </div>
         <PluginNavSidebarItems

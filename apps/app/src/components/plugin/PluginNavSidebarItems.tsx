@@ -33,9 +33,9 @@ import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-siz
 import { PluginIcon } from "@/components/plugin/PluginIcon";
 import { PROJECT_LIST_ACTION_BUTTON_CLASS } from "@/components/sidebar/ProjectList";
 import { getPluginPanelRoutePath } from "@/lib/route-paths";
-import { usePluginSlots } from "@/lib/plugin-slots";
+import { usePluginSlots, type PluginNavPanelSlot } from "@/lib/plugin-slots";
 import { cn } from "@bb/shared-ui/lib/utils";
-import type { PluginNavPanelSlot } from "@/lib/plugin-slots";
+import type { PluginNavPanelSidebarPlacement } from "@bb/plugin-sdk";
 import { usePaneContentSplitDrag } from "@/components/sidebar/usePaneContentSplitDrag";
 import { usePaneContentSplitIndicator } from "@/components/sidebar/paneContentSplitIndicator";
 import type { MiniMapSlot } from "@/components/sidebar/paneContentSplitIndicator";
@@ -115,23 +115,35 @@ type SidebarNavRow =
  */
 export function PluginNavSidebarItems({
   toolsRoutePath,
+  placement = "default",
   ...props
 }: {
   onNavigate?: () => void;
   splitEnabled?: boolean;
   /** Omit to drop the built-in Extensions row, e.g. when its experiment is off. */
   toolsRoutePath?: string;
+  /**
+   * `primary` renders directly below New thread; `default` renders with the
+   * other plugin nav rows.
+   */
+  placement?: PluginNavPanelSidebarPlacement;
 }) {
   const { navPanels } = usePluginSlots();
   const rows = useMemo<SidebarNavRow[]>(() => {
-    const pluginRows = navPanels.map<SidebarNavRow>((panel) => ({
-      kind: "plugin",
-      pluginId: panel.pluginId,
-      id: panel.id,
-      title: panel.title,
-      panel,
-    }));
-    if (toolsRoutePath === undefined) return pluginRows;
+    const pluginRows = navPanels
+      .filter(
+        (panel) => (panel.sidebarPlacement ?? "default") === placement,
+      )
+      .map<SidebarNavRow>((panel) => ({
+        kind: "plugin",
+        pluginId: panel.pluginId,
+        id: panel.id,
+        title: panel.title,
+        panel,
+      }));
+    if (placement !== "default" || toolsRoutePath === undefined) {
+      return pluginRows;
+    }
     return [
       {
         kind: "tools",
@@ -142,21 +154,25 @@ export function PluginNavSidebarItems({
       },
       ...pluginRows,
     ];
-  }, [navPanels, toolsRoutePath]);
+  }, [navPanels, placement, toolsRoutePath]);
   // Router hooks live in the inner component so hosts without a Router
   // (isolated sidebar tests/stories) can render the empty state.
   if (rows.length === 0) return null;
-  return <PluginNavSidebarItemList {...props} rows={rows} />;
+  return (
+    <PluginNavSidebarItemList {...props} rows={rows} placement={placement} />
+  );
 }
 
 function PluginNavSidebarItemList({
   onNavigate,
   rows,
   splitEnabled = false,
+  placement = "default",
 }: {
   onNavigate?: () => void;
   rows: readonly SidebarNavRow[];
   splitEnabled?: boolean;
+  placement?: PluginNavPanelSidebarPlacement;
 }) {
   const location = useLocation();
   const [storedOrder, setStoredOrder] = useAtom(pluginNavPanelOrderAtom);
@@ -237,8 +253,16 @@ function PluginNavSidebarItemList({
     <div
       // Pull back most of the primary-actions bottom padding so plugin panel
       // rows keep the same compact 2px rhythm as sidebar thread rows.
-      className="-mt-1.5 shrink-0 space-y-0.5 px-2 pb-2 group-data-[collapsible=icon]:hidden"
-      data-testid="plugin-nav-sidebar-items"
+      className={cn(
+        placement === "primary"
+          ? "space-y-0.5"
+          : "-mt-1.5 shrink-0 space-y-0.5 px-2 pb-2 group-data-[collapsible=icon]:hidden",
+      )}
+      data-testid={
+        placement === "primary"
+          ? "plugin-nav-sidebar-primary-items"
+          : "plugin-nav-sidebar-items"
+      }
       onClickCapture={onClickCapture}
     >
       <DndContext {...dndContextProps}>
