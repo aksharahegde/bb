@@ -138,6 +138,18 @@ export const OFFICIAL_PLUGINS = [
     defaultEnabled: true,
     category: "Workflow management",
   },
+  {
+    name: "summary-hub",
+    pluginId: "summary-hub",
+    defaultEnabled: true,
+    category: "Context & knowledge",
+  },
+  {
+    name: "agent-roster",
+    pluginId: "agent-roster",
+    defaultEnabled: true,
+    category: "Agent interaction",
+  },
   // Replaces the standard sidebar, so users install it deliberately instead
   // of receiving a disabled registration by default.
   {
