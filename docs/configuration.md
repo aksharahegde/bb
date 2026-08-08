@@ -148,10 +148,16 @@ agent or terminal with
 `bb settings general showUnhandledProviderEvents <true|false>`.
 
 The "Steer running threads on Enter" toggle in Settings → General changes the
-active-thread composer shortcuts. It defaults to off: Enter queues and
-Command+Enter steers. When enabled, Enter steers and Command+Enter queues. Set
-it with
+active-thread composer shortcuts when no typeahead suggestion is active. It
+defaults to off: Enter queues and Command+Enter steers. When enabled, Enter
+steers and Command+Enter queues. Set it with
 `bb settings general steerActiveThreadOnEnter <true|false>`.
+
+Outside an open typeahead menu, Shift+Enter inserts a newline. In zen mode,
+unmodified Enter also inserts a newline. On coarse-pointer touch devices, the
+software-keyboard Return path inserts a newline and the submit button sends.
+iPadOS WebKit additionally preserves the Enter and Command+Enter shortcuts
+above for a connected Magic Keyboard.
 
 ## Keyboard Shortcuts
 
@@ -339,6 +345,11 @@ option keep agent-managed reasoning unless the provider launch spec declares
 model ids discovered through `modelCli`, not in an ACP `thought_level` option.
 Grok Build is also separate: it uses `reasoningCli` to launch
 `grok --reasoning-effort <level> agent stdio`.
+
+When an agent declares `thought_level` with no options, bb hides the reasoning
+control. bb also hides it when none of the declared values map to a supported bb
+reasoning level. Omitting `thought_level` keeps the agent-managed reasoning
+fallback for agents that do not advertise this capability.
 
 Custom ACP agents are supported only with the co-located daemon from the same
 machine as the server. A command path in server config is host-local and is not
