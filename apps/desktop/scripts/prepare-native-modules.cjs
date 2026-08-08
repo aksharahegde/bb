@@ -1,5 +1,5 @@
 const { spawn } = require("node:child_process");
-const { chmod, readFile, readdir, writeFile } = require("node:fs/promises");
+const { chmod, cp, readFile, readdir, stat, writeFile } = require("node:fs/promises");
 const { createRequire } = require("node:module");
 const path = require("node:path");
 
@@ -12,6 +12,7 @@ const PACKAGED_NATIVE_PACKAGE_NAMES = [
   NODE_PTY_PACKAGE_NAME,
   BETTER_SQLITE3_PACKAGE_NAME,
 ];
+const PARCEL_WATCHER_PACKAGE_NAME = "@parcel/watcher";
 
 // better-sqlite3 must match the runtime that loads it. The packaged app runs
 // the bb server through Electron's bundled Node, so the packaged copy has to
@@ -198,6 +199,79 @@ async function prepareBetterSqlite3PackageDirectory(packageDirectory, options) {
   );
 }
 
+async function resolveSourceParcelWatcherPlatformPackages() {
+  const bbAppPackageJson = path.join(
+    desktopPackageRoot,
+    "node_modules",
+    "bb-app",
+    "package.json",
+  );
+  if (!(await isDirectory(path.dirname(bbAppPackageJson)))) {
+    throw new Error(
+      `Unable to find bb-app under ${desktopPackageRoot}; run pnpm install before packaging`,
+    );
+  }
+
+  const requireFromBbApp = createRequire(bbAppPackageJson);
+  const watcherPackageJson = requireFromBbApp.resolve(
+    "@parcel/watcher/package.json",
+  );
+  const parcelDirectory = path.dirname(path.dirname(watcherPackageJson));
+  const entries = await readdir(parcelDirectory, { withFileTypes: true });
+  const sourcePlatformPackages = [];
+
+  for (const entry of entries) {
+    if (entry.name === "watcher" || !entry.name.startsWith("watcher-")) {
+      continue;
+    }
+
+    const sourcePath = path.join(parcelDirectory, entry.name);
+    const entryStats = await stat(sourcePath);
+    if (!entryStats.isDirectory()) {
+      continue;
+    }
+
+    sourcePlatformPackages.push({
+      directoryName: entry.name,
+      sourcePath,
+    });
+  }
+
+  return sourcePlatformPackages;
+}
+
+async function prepareParcelWatcherPlatformPackages(appOutDir) {
+  const watcherDirectories = (
+    await findPackageDirectories(appOutDir, [PARCEL_WATCHER_PACKAGE_NAME])
+  ).get(PARCEL_WATCHER_PACKAGE_NAME);
+  if (watcherDirectories.length === 0) {
+    throw new Error(
+      `Unable to find ${PARCEL_WATCHER_PACKAGE_NAME} under ${appOutDir}`,
+    );
+  }
+
+  const sourcePlatformPackages = await resolveSourceParcelWatcherPlatformPackages();
+  if (sourcePlatformPackages.length === 0) {
+    throw new Error(
+      "Unable to find @parcel/watcher platform packages in the build workspace",
+    );
+  }
+
+  for (const watcherDirectory of watcherDirectories) {
+    const parcelDirectory = path.dirname(watcherDirectory);
+    for (const platformPackage of sourcePlatformPackages) {
+      const destinationPath = path.join(
+        parcelDirectory,
+        platformPackage.directoryName,
+      );
+      if (await isDirectory(destinationPath)) {
+        continue;
+      }
+      await cp(platformPackage.sourcePath, destinationPath, { recursive: true });
+    }
+  }
+}
+
 async function preparePackagedNativeModules(appOutDir, options = {}) {
   if (!(await isDirectory(appOutDir))) {
     throw new Error(`Packaged app output does not exist: ${appOutDir}`);
@@ -214,6 +288,7 @@ async function preparePackagedNativeModules(appOutDir, options = {}) {
     );
   }
   await Promise.all(nodePtyDirectories.map(prepareNodePtyPackageDirectory));
+  await prepareParcelWatcherPlatformPackages(appOutDir);
 
   // The Electron target is only known on the real afterPack path. Standalone
   // invocations (e.g. tests, manual node-pty repair) omit it and skip the fetch.
@@ -313,6 +388,8 @@ module.exports.findNativePackageDirectories = findNativePackageDirectories;
 module.exports.prepareNodePtyPackageDirectory = prepareNodePtyPackageDirectory;
 module.exports.prepareBetterSqlite3PackageDirectory =
   prepareBetterSqlite3PackageDirectory;
+module.exports.prepareParcelWatcherPlatformPackages =
+  prepareParcelWatcherPlatformPackages;
 module.exports.preparePackagedNativeModules = preparePackagedNativeModules;
 module.exports.resolveBetterSqlite3PrebuildArguments =
   resolveBetterSqlite3PrebuildArguments;

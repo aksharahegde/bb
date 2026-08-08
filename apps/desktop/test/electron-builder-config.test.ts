@@ -353,9 +353,21 @@ describe("electron-builder signing config", () => {
       "spawn-helper",
     );
     const rebuiltHelperPath = resolve(rebuiltNativeDir, "spawn-helper");
+    const watcherDirectory = resolve(
+      appOutDir,
+      "bb.app",
+      "Contents",
+      "Resources",
+      "app.asar.unpacked",
+      "node_modules",
+      "@parcel",
+      "watcher",
+    );
 
     try {
       await mkdir(rebuiltNativeDir, { recursive: true });
+      await mkdir(watcherDirectory, { recursive: true });
+      await writeFile(resolve(watcherDirectory, "index.js"), "module.exports = {};");
       await writeFile(resolve(rebuiltNativeDir, "pty.node"), "rebuilt");
       await writeFile(rebuiltHelperPath, "rebuilt-helper");
       await chmod(rebuiltHelperPath, 0o644);
@@ -378,6 +390,63 @@ describe("electron-builder signing config", () => {
       );
       expect((await stat(helperPath)).mode & 0o777).toBe(0o755);
       expect((await stat(rebuiltHelperPath)).mode & 0o777).toBe(0o755);
+    } finally {
+      await rm(appOutDir, { force: true, recursive: true });
+    }
+  });
+
+  it("copies @parcel/watcher platform packages into the packaged app", async () => {
+    const appOutDir = await mkdtemp(
+      resolve(tmpdir(), "bb-desktop-parcel-watcher-"),
+    );
+    const parcelDirectory = resolve(
+      appOutDir,
+      "bb.app",
+      "Contents",
+      "Resources",
+      "app.asar.unpacked",
+      "node_modules",
+      "@parcel",
+    );
+    const watcherDirectory = resolve(parcelDirectory, "watcher");
+    const nodePtyPackageDir = resolve(
+      appOutDir,
+      "bb.app",
+      "Contents",
+      "Resources",
+      "app.asar.unpacked",
+      "node_modules",
+      "node-pty",
+    );
+    const unixTerminalPath = resolve(nodePtyPackageDir, "lib", "unixTerminal.js");
+    const helperPath = resolve(
+      nodePtyPackageDir,
+      "prebuilds",
+      "darwin-arm64",
+      "spawn-helper",
+    );
+
+    try {
+      await mkdir(watcherDirectory, { recursive: true });
+      await writeFile(resolve(watcherDirectory, "index.js"), "module.exports = {};");
+      await mkdir(dirname(unixTerminalPath), { recursive: true });
+      await writeFile(
+        unixTerminalPath,
+        "helperPath = helperPath.replace('app.asar', 'app.asar.unpacked');",
+      );
+      await mkdir(dirname(helperPath), { recursive: true });
+      await writeFile(helperPath, "helper");
+      await chmod(helperPath, 0o644);
+
+      const result = await runNativePrepScript(appOutDir);
+
+      expect(result.exitCode).toBe(0);
+      await expect(
+        access(resolve(parcelDirectory, "watcher-darwin-arm64", "watcher.node")),
+      ).resolves.toBeUndefined();
+      await expect(
+        access(resolve(parcelDirectory, "watcher-darwin-x64", "watcher.node")),
+      ).resolves.toBeUndefined();
     } finally {
       await rm(appOutDir, { force: true, recursive: true });
     }
