@@ -73,6 +73,12 @@ export const BUILTIN_PLUGINS = [
     category: "Interface",
   },
   {
+    name: "provider-retry",
+    pluginId: "provider-retry",
+    defaultEnabled: false,
+    category: "Agent interaction",
+  },
+  {
     name: "secrets",
     pluginId: "secrets",
     defaultEnabled: true,
@@ -149,14 +155,6 @@ export const OFFICIAL_PLUGINS = [
     pluginId: "agent-roster",
     defaultEnabled: true,
     category: "Agent interaction",
-  },
-  // Replaces the standard sidebar, so users install it deliberately instead
-  // of receiving a disabled registration by default.
-  {
-    name: "t3sidebar",
-    pluginId: "t3sidebar",
-    defaultEnabled: false,
-    category: "Interface",
   },
 ].map(
   (plugin): BundledPluginDefinition => ({

@@ -17,7 +17,14 @@ message agents, or inspect projects, providers, and environments.
 - A standalone `bb` CLI with no connection env targets the default local server
   at `http://127.0.0.1:38886` and host daemon port `38887`. Set
   `BB_SERVER_URL` and `BB_HOST_DAEMON_PORT` only for remote or non-default
-  targets.
+  targets. The Add machine installer injects its enrolled daemon's selected
+  local API port automatically and atomically reserves it across default and
+  custom machine data directories.
+- The main server and source Vite app bind to loopback by default. Use bb
+  connect or a private Tailscale Serve URL for remote browsers and execution
+  machines. `--server-bind-host 0.0.0.0` is a compatibility escape hatch only:
+  the public API is unauthenticated and permits command execution and file
+  reads, so wildcard binding requires a trusted network boundary.
 
 ## Environment Setup Script
 
@@ -49,6 +56,15 @@ message agents, or inspect projects, providers, and environments.
 - `BB_TRANSCRIPTION` selects the voice transcription model. It defaults to
   `codex/gpt-transcribe`; set an override with
   `bb-app config set BB_TRANSCRIPTION <provider/model>`.
+- `bb-app config` and `bb-app env` reload runtime settings in a running server,
+  but the CLI identifies server and launcher settings that are startup-only,
+  including binding/ports, data and the dev-app port, telemetry, inherited skill
+  roots, and `BB_FF_*` flags. `BB_LOG_LEVEL` is also startup-only. Use
+  `bb-app config`, not `bb-app env`, to change `BB_APP_URL`, `BB_INFERENCE`, or
+  `BB_TRANSCRIPTION` live. After a startup-only change, run
+  `bb-app stop && bb-app start` or restart the desktop app. Until then, a server
+  previously bound to `0.0.0.0` remains exposed even if
+  `BB_SERVER_BIND_HOST` was changed or unset.
 - Settings → General holds server-backed app-wide preferences, such as the
   macOS-only "Caffeinate" toggle. For details, read
   `references/app-settings.md` (in this skill's directory).
@@ -77,6 +93,10 @@ message agents, or inspect projects, providers, and environments.
   and Automations management UI. Change it with
   `bb settings experiment toolsHub <true|false>`. It does not load or unload
   tools.
+- The default-off `newOnboarding` experiment exposes the first-run agent and
+  project setup guide. Change it with
+  `bb settings experiment newOnboarding <true|false>`. Use
+  `bb settings replay-onboarding` to enable it and show the guide again.
 - Thread timeline windows are capped by event count as well as by user-message
   count (`BB_FF_TIMELINE_WINDOW_EVENT_BUDGET`, default 1500), because a thread
   with few user messages but many events would otherwise reproject its whole
@@ -371,6 +391,23 @@ For review or fix pipelines, get the environment ID from
 - For failed threads, inspect `bb thread show <id> --json` and
   `bb thread log <id>` before deciding whether to retry, clarify, or update the
   user.
+- The opt-in Provider retry plugin automatically waits for structured Codex and
+  Claude Code subscription-window resets when the failed turn was accepted and
+  its execution settings remain available. Prior output or tool activity does
+  not block recovery. Enable it with
+  `bb plugin enable provider-retry` or under Extensions → Plugins. Its timers
+  last only while the current bb server/plugin process is running. Inspect it
+  with `bb provider-retry status [thread-id]`, or cancel one with
+  `bb provider-retry cancel <thread-id>`. Automatic waits default to six hours;
+  configure longer waits with
+  `bb plugin config provider-retry set maximumWait "24 hours"` or select
+  `No limit` in the plugin settings. Resets beyond the configured horizon are
+  not scheduled.
+- Use `bb thread retry [id] [--request-id <id>]` for the same core
+  continuation when no plugin timer remains. It sends agent-only “Please
+  continue.” on the existing provider conversation and declines when input was
+  not accepted, execution settings are unavailable, a newer request exists, or
+  the provider still owns the retry.
 - For interrupted or stopped threads, inspect first. If the user stopped the
   thread, treat that as intentional unless they ask you to continue.
 - Use `bb thread stop <id>` when a thread is stuck or no longer needed.
@@ -611,7 +648,7 @@ them by mixing ink into canvas), the `--primary` accent, the secondary text tier
   (except `side-chat`, which is gated by the **"Side chat plugin"**
   experiment); official plugins install from the bundled store on demand.
 - **BB Official plugins** (store under `/api/v1/plugin-catalog`):
-  - BB's official plugins (GitHub, Docs, Memory, Tasks, T3 Sidebar) ship
+  - BB's official plugins (GitHub, Docs, Memory, and Tasks) ship
     bundled inside the app and install from the local copy — no network. Installed official
     plugins are pinned to the bundled copy and update with BB app releases.
   - `bb plugin search <query> [--json]` — search the official plugins by id,
@@ -662,6 +699,12 @@ them by mixing ink into canvas), the `--primary` accent, the secondary text tier
     `server.meta.json` stamped with SDK/identity metadata; preferred by
     git/npm installs over source) and, when `bb.app` is declared, `app.js` +
     `app.css` + `app.meta.json`. Neither needs the server.
+  - `bb plugin types [path]` — rewrite the plugin's `types/*.d.ts` from the
+    running bb's `@bb/plugin-sdk` declarations, creating `types/` when absent.
+    Run it in a cloned or older plugin: the scaffold seeds those files once and
+    the SDK surface grows every release. `--check` reports staleness and exits
+    non-zero without writing (for CI). `bb plugin build` and `bb plugin dev`
+    refresh them automatically. Needs no server.
   - `bb plugin dev [path]` — watch loop for an installed plugin (default:
     cwd): on every change it rebuilds the frontend bundle (when `bb.app` is
     declared) and reloads the plugin; open app pages pick the new UI up live.

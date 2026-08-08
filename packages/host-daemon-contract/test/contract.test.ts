@@ -322,6 +322,7 @@ const ONLINE_RPC_RESPONSE_RESULT_FIXTURES: OnlineRpcResponseResultFixtures = {
         id: "codex/gpt-5",
         model: "gpt-5",
         displayName: "GPT-5",
+        routeProviderId: "openai-codex",
         description: "Test model",
         supportedReasoningEfforts: [
           {
@@ -714,6 +715,8 @@ const INTENTIONAL_OPTIONAL_HOST_DAEMON_FIELDS: Record<string, string> = {
     "workspace.status may omit mergeBaseBranch when the caller only needs working-tree state.",
   "hostDaemonOnlineRpcCommandSchema.acpLaunchSpec":
     "provider.list_models includes an ACP launch spec only for dynamic ACP providers; built-ins resolve from daemon-side profiles.",
+  "hostDaemonOnlineRpcCommandSchema.cwd":
+    "provider.list_models may omit cwd when only user-level provider configuration applies.",
   "hostDaemonOnlineRpcCommandSchema.acpLaunchSpec.cwd":
     "dynamic ACP launch specs may omit cwd so the daemon uses the caller's workspace cwd.",
   "hostDaemonOnlineRpcCommandSchema.acpLaunchSpec.modelCli":
@@ -1036,10 +1039,10 @@ describe("host-daemon local schemas", () => {
 });
 
 describe("host-daemon command schemas", () => {
-  // Version 76 lets the daemon report a repository that appears after the
-  // server created the environment. Older daemons do not send that message.
-  it("uses protocol version 76 for live workspace metadata refresh", () => {
-    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(76);
+  // Version 83 adds the nested provider route to model/list results so clients
+  // can disambiguate models without changing their friendly display names.
+  it("uses protocol version 83 for model route provider metadata", () => {
+    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(83);
   });
 
   it("binds Plan cancellation to a required turn id and typed result", () => {
@@ -2043,6 +2046,7 @@ describe("host-daemon command schemas", () => {
       type: "provider.list_models",
       providerId: "acp-local",
       acpLaunchSpec: ACP_LAUNCH_SPEC,
+      cwd: "/tmp/workspace",
     };
     const providerListModelsRoundTrip = JSON.parse(
       JSON.stringify(providerListModelsCommand),
@@ -3575,6 +3579,23 @@ describe("host-daemon session schemas", () => {
 
     expect(
       hostDaemonServerWsMessageSchema.safeParse({
+        type: "terminal.attach",
+        requestId: "request-1",
+        terminalId: "term_123",
+        sinceSeq: 12,
+        tailBytes: 512 * 1024,
+      }).success,
+    ).toBe(true);
+    expect(
+      hostDaemonServerWsMessageSchema.safeParse({
+        type: "terminal.attach",
+        requestId: "request-1",
+        terminalId: "term_123",
+        sinceSeq: 12,
+      }).success,
+    ).toBe(false);
+    expect(
+      hostDaemonServerWsMessageSchema.safeParse({
         type: "terminal.input",
         terminalId: "term_123",
         dataBase64: maxPayload,
@@ -3597,6 +3618,7 @@ describe("host-daemon session schemas", () => {
             dataBase64: oversizedDecodedPayload,
           },
         ],
+        replayStartSeq: 0,
         nextSeq: 1,
       }).success,
     ).toBe(false);

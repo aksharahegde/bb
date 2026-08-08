@@ -97,10 +97,10 @@ describe("official plugin registry invariants", () => {
       github: "Developer tools",
       "inline-vis": "Interface",
       memory: "Context & knowledge",
+      "provider-retry": "Agent interaction",
       secrets: "Developer tools",
       "side-chat": "Agent interaction",
       "summary-hub": "Context & knowledge",
-      t3sidebar: "Interface",
       tasks: "Workflow management",
       workflows: "Workflow management",
     };

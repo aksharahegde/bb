@@ -187,9 +187,18 @@ describe("builtin plugin reconciliation", () => {
 
   it("keeps official plugins bundled but out of the auto-install builtins", () => {
     const optionalNames = OFFICIAL_PLUGINS.map((plugin) => plugin.name);
-    for (const name of ["memory", "t3sidebar"]) {
+    expect(optionalNames).toEqual([
+      "github",
+      "docs",
+      "memory",
+      "tasks",
+      "decisions",
+      "autonomous-backlog",
+      "summary-hub",
+      "agent-roster",
+    ]);
+    for (const name of optionalNames) {
       expect(BUILTIN_PLUGINS.map((plugin) => plugin.name)).not.toContain(name);
-      expect(optionalNames).toContain(name);
     }
     expect(OFFICIAL_PLUGINS.every((plugin) => !plugin.autoInstall)).toBe(true);
   });
@@ -201,6 +210,7 @@ describe("builtin plugin reconciliation", () => {
       ["connect", "Smartphone"],
       ["custom-instructions", "EditFile"],
       ["inline-vis", "AppWindow"],
+      ["provider-retry", "ArrowReloadHorizontal"],
       ["secrets", "Lock"],
       ["side-chat", "SideChat"],
       ["workflows", "Workflow"],
@@ -391,6 +401,31 @@ describe("builtin plugin reconciliation", () => {
       {
         id: "workflows",
         source: "builtin:workflows",
+        enabled: false,
+        status: "disabled",
+      },
+    ]);
+  });
+
+  it("ships Provider retry disabled on a fresh database", async () => {
+    const providerRetry = BUILTIN_PLUGINS.find(
+      (builtin) => builtin.name === "provider-retry",
+    );
+    expect(providerRetry?.defaultEnabled).toBe(false);
+
+    service = createService({
+      db,
+      dataDir: join(workDir, "data"),
+      builtinName: "provider-retry",
+      defaultEnabled: providerRetry?.defaultEnabled,
+      rootDir: resolveBuiltinPluginRootPath("provider-retry"),
+    });
+    await service.start();
+
+    expect(service.list()).toMatchObject([
+      {
+        id: "provider-retry",
+        source: "builtin:provider-retry",
         enabled: false,
         status: "disabled",
       },

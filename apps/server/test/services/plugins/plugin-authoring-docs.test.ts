@@ -271,6 +271,7 @@ const NAV_PANEL_REGISTRATION_FIELDS = [
   "path",
   "component",
   "headerContent",
+  "sidebarPlacement",
 ] as const satisfies readonly (keyof PluginNavPanelRegistration)[];
 
 type MissingNavPanelRegistrationField = Exclude<

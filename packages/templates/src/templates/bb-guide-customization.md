@@ -35,6 +35,17 @@ appearance value forward explicitly.
 
 Add --json to any theme command for machine-readable output.
 
+Packaged launcher settings
+
+`bb-app config` and `bb-app env` reload runtime settings in a running server,
+but the CLI identifies server and launcher settings that are startup-only,
+including binding/ports, data and the dev-app port, telemetry, inherited skill
+roots, and `BB_FF_*` flags. `BB_LOG_LEVEL` is also startup-only. Use
+`bb-app config`, not `bb-app env`, to change `BB_APP_URL`, `BB_INFERENCE`, or
+`BB_TRANSCRIPTION` live. After a startup-only change, run `bb-app stop && bb-app
+start` or restart the desktop app. Until then, changing or unsetting
+`BB_SERVER_BIND_HOST` does not close a previous `0.0.0.0` listener.
+
 Server-backed General settings
 
 Settings → General includes app-wide preferences stored server-side so every
@@ -66,10 +77,13 @@ follow-up; when disabled, those actions are reversed.
   bb settings version [--force]
   bb settings reload
 
-`bb settings replay-onboarding` clears `onboardingCompletedAt` so the first-run
-setup guide (agent detection, then adding projects) shows again on the next app
-load. The same button lives in Settings → General → Setup guide.
+`bb settings replay-onboarding` enables the `newOnboarding` experiment and
+clears `onboardingCompletedAt`. The first-run setup guide then shows again on
+the next app load. The same button lives in Settings → General → Setup guide
+while the experiment is on.
 
+The `newOnboarding` experiment exposes the first-run agent and project setup
+guide.
 The `toolsHub` experiment exposes Extensions for managing skills and plugins.
 Automations stays in the Plugins section beside threads. It does not enable or
 disable installed skills, automation execution, plugin runtimes, CLI commands,
