@@ -1039,11 +1039,12 @@ describe("host-daemon local schemas", () => {
 });
 
 describe("host-daemon command schemas", () => {
-  // Version 85 includes accepted turns that await their first event in the
-  // active-thread session report. The bump updates enrolled daemons before
-  // the server depends on the revised report meaning during reconciliation.
-  it("uses protocol version 85 for pending-turn session reports", () => {
-    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(85);
+  // Version 89 makes the ACP adapter mint turn-qualified fileChange item ids.
+  // An enrolled daemon on an older build still emits session-scoped counters
+  // that collide across resumed sessions, so it must update before it reports
+  // more file edits.
+  it("uses protocol version 89 for turn-qualified ACP fileChange item ids", () => {
+    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(89);
   });
 
   it("binds Plan cancellation to a required turn id and typed result", () => {
