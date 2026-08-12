@@ -1,5 +1,6 @@
 import { definePluginApp } from "@bb/plugin-sdk/app";
 import { TasksAppShell } from "./shell/app-shell.js";
+import { TasksSidebarAccessory } from "./shell/sidebar-accessory.js";
 import { TaskDirectiveCard, TaskEmbedPanel } from "./views/embed/index.js";
 
 export default definePluginApp((app) => {
@@ -10,6 +11,7 @@ export default definePluginApp((app) => {
     path: "tasks",
     sidebarPlacement: "primary",
     component: TasksAppShell,
+    experimental_sidebarAccessory: TasksSidebarAccessory,
   });
   app.slots.threadPanelAction({
     id: "task",

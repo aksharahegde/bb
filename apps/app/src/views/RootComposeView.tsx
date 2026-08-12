@@ -29,12 +29,11 @@ import {
   NewThreadPromptBox,
   type NewThreadProjectConfig,
 } from "@/components/promptbox/NewThreadPromptBox";
-import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
+import { CodexCliVersionBanner } from "@/components/promptbox/banner/CodexCliVersionBanner";
 import {
   buildProviderCliIssue,
   hasProviderCliAction,
   useProviderCliInstallRunner,
-  type ProviderCliActionableIssue,
 } from "@/components/provider-cli/provider-cli-install";
 import { providerCliJobKey } from "@/components/provider-cli/provider-cli-install-store";
 import { withAutomationPromptAction } from "@/components/promptbox/PromptBoxActionsMenu";
@@ -73,7 +72,10 @@ import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
 import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
 import { COARSE_POINTER_COMPACT_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
-import { PluginPanelTabContent } from "@/components/plugin/PluginPanelActions";
+import {
+  PluginPanelTabContent,
+  usePluginNewThreadPanelActions,
+} from "@/components/plugin/PluginPanelActions";
 import { usePluginSlots } from "@/lib/plugin-slots";
 import { useUploadPromptAttachment } from "@/hooks/mutations/project-mutations";
 import { useCreateThread } from "@/hooks/mutations/thread-runtime-mutations";
@@ -729,56 +731,6 @@ export function LegacyProjectComposeRedirect({
   );
 }
 
-interface CodexCliVersionBannerProps {
-  currentVersion: string | null;
-  minimumSupportedVersion: string | null;
-  issue: ProviderCliActionableIssue | null;
-  updating: boolean;
-  onUpdate: () => void;
-}
-
-function CodexCliVersionBanner({
-  currentVersion,
-  minimumSupportedVersion,
-  issue,
-  updating,
-  onUpdate,
-}: CodexCliVersionBannerProps) {
-  const minimumVersion = minimumSupportedVersion ?? "a newer version";
-  const versionCopy = currentVersion
-    ? `Installed ${currentVersion}; required ${minimumVersion} or newer.`
-    : `Required ${minimumVersion} or newer.`;
-  return (
-    <PromptStackCard
-      ariaLabel="Codex update needed"
-      className="overflow-hidden"
-    >
-      <div className="flex min-h-8 max-w-full items-center gap-2 px-2.5 py-1 text-xs text-muted-foreground">
-        <Icon
-          name="Info"
-          className="size-3.5 shrink-0 text-subtle-foreground"
-          aria-hidden
-        />
-        <span className="min-w-0 flex-1 truncate">
-          Update Codex to start this thread. {versionCopy}
-        </span>
-        {issue ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-6 shrink-0 px-2 text-xs"
-            disabled={updating}
-            onClick={onUpdate}
-          >
-            {updating ? "Updating" : issue.action.label}
-          </Button>
-        ) : null}
-      </div>
-    </PromptStackCard>
-  );
-}
-
 export function RootComposeRoute() {
   const { projectId } = useParams<{ projectId: string }>();
 
@@ -1074,6 +1026,7 @@ export function RootComposeView() {
     executionOptionsRouting,
     selectedProviderId,
     setSelectedProviderId,
+    setProviderModelReasoning,
     providerOptions,
     hasMultipleProviders,
     selectedProviderComposerActions,
@@ -1236,9 +1189,7 @@ export function RootComposeView() {
     }
     if (nextForkSeed !== null && nextHandoffSeed === null) {
       setForkSeed(nextForkSeed);
-      setSelectedProviderId(nextForkSeed.providerId);
-      setSelectedModel(nextForkSeed.model);
-      setReasoningLevel(nextForkSeed.reasoningLevel);
+      setProviderModelReasoning(nextForkSeed);
       setPermissionMode(nextForkSeed.permissionMode);
       setServiceTier(nextForkSeed.serviceTier);
     }
@@ -1264,9 +1215,7 @@ export function RootComposeView() {
     seedHandoffPrompt,
     setEnvironmentSelectionValue,
     setPermissionMode,
-    setReasoningLevel,
-    setSelectedModel,
-    setSelectedProviderId,
+    setProviderModelReasoning,
     setRootComposeProjectId,
     setServiceTier,
   ]);
@@ -1909,6 +1858,7 @@ export function RootComposeView() {
   const commandSuggestions = useCommandSuggestions({
     projectId,
     providerId: selectedProviderId,
+    commandScope: "new-thread",
     skillsTrigger: providerPromptActions.skillsTrigger,
     promptActions: providerPromptActionProps.promptActions,
     environmentId: reuseEnvironmentId,
@@ -1975,6 +1925,13 @@ export function RootComposeView() {
   const setActiveFixedTerminal = useSetFixedRightTerminalActiveTerminal(
     ROOT_COMPOSE_FIXED_PANEL_STATE_ID,
     null,
+  );
+  // Route-driven panel remounts are passive. Explicit terminal actions keep
+  // this request pending until the asynchronously mounted xterm handles it.
+  const [shouldAutoFocusTerminal, setShouldAutoFocusTerminal] = useState(false);
+  const handleTerminalAutoFocusHandled = useCallback(
+    () => setShouldAutoFocusTerminal(false),
+    [],
   );
   const removeFixedTerminalTab = useRemoveFixedRightTerminalTab(
     ROOT_COMPOSE_FIXED_PANEL_STATE_ID,
@@ -2105,10 +2062,15 @@ export function RootComposeView() {
     () => new Map(terminalSessions.map((session) => [session.id, session])),
     [terminalSessions],
   );
-  const [newTabFocusRequest, setNewTabFocusRequest] = useState(0);
+  const [shouldAutoFocusNewTab, setShouldAutoFocusNewTab] = useState(false);
+  const handleNewTabAutoFocusHandled = useCallback(
+    () => setShouldAutoFocusNewTab(false),
+    [],
+  );
   const [browserAddressFocusRequest, setBrowserAddressFocusRequest] =
     useState<BrowserAddressFocusRequest | null>(null);
-  const { threadPanelActions: rootPanelThreadPanelActions } = usePluginSlots();
+  const { newThreadPanelActions: rootPanelNewThreadPanelActions } =
+    usePluginSlots();
   const {
     activePluginPanelTab,
     activeHostFileEnvironmentId,
@@ -2131,6 +2093,7 @@ export function RootComposeView() {
     activateTab,
     closeTab,
     isNewTabActive,
+    openPluginPanel,
     openTab,
     orderedSecondaryFileTabs,
     reorderFileTab,
@@ -2146,6 +2109,10 @@ export function RootComposeView() {
     retainedTerminalId,
     storageFiles: rootThreadStorageFiles?.files,
     terminalSessions: loadedTerminalSessions,
+  });
+  const rootPluginPanelActions = usePluginNewThreadPanelActions({
+    openPluginPanel,
+    projectId: isProjectless ? null : projectId,
   });
 
   const activeRootHostFileThreadId =
@@ -2456,7 +2423,7 @@ export function RootComposeView() {
   const handleOpenNewTab = useCallback(() => {
     openTab({ kind: "new-tab" });
     openCompactDrawer();
-    setNewTabFocusRequest((current) => current + 1);
+    setShouldAutoFocusNewTab(true);
   }, [openCompactDrawer, openTab]);
   useAppCommandHandler("panel.newTab", () => {
     if (!isFocusedPane) return false;
@@ -2514,6 +2481,7 @@ export function RootComposeView() {
     void createTerminal
       .then((session) => {
         closeTab(newTab.id);
+        setShouldAutoFocusTerminal(true);
         setActiveFixedTerminal(session.id);
         openCompactDrawer();
       })
@@ -2542,6 +2510,7 @@ export function RootComposeView() {
   });
   const handleActivateTerminalTab = useCallback(
     (terminalId: string) => {
+      setShouldAutoFocusTerminal(true);
       setActiveFixedTerminal(terminalId);
       openCompactDrawer();
     },
@@ -2715,10 +2684,13 @@ export function RootComposeView() {
               onSelect: () => handleActivateFileTab(tab.id),
               onClose: () => closeTab(tab.id),
             };
-          case "plugin-panel":
-            // Plugin action tabs are opened from a thread's launcher; the
-            // root panel offers no plugin actions, but file-opener tabs open
-            // here too and persisted state must render any kind.
+          case "plugin-panel": {
+            const actionIcon =
+              rootPanelNewThreadPanelActions.find(
+                (action) =>
+                  action.pluginId === tab.pluginId &&
+                  action.id === tab.actionId,
+              )?.icon ?? null;
             return {
               id: tab.id,
               filename: tab.title,
@@ -2726,7 +2698,7 @@ export function RootComposeView() {
               leadingVisual: (
                 <PluginIcon
                   pluginId={tab.pluginId}
-                  icon={null}
+                  icon={actionIcon}
                   className={COARSE_POINTER_COMPACT_ICON_SIZE_CLASS}
                 />
               ),
@@ -2734,6 +2706,7 @@ export function RootComposeView() {
               onSelect: () => handleActivateFileTab(tab.id),
               onClose: () => closeTab(tab.id),
             };
+          }
         }
       },
     );
@@ -2985,9 +2958,11 @@ export function RootComposeView() {
   const fileTabContent: ReactNode =
     activeTerminalId && rootPanelTerminalTarget ? (
       <ThreadTerminalPanel
+        autoFocus={shouldAutoFocusTerminal}
         canCreateTerminal={canCreateRootTerminal}
         isPanelOpen={isSecondaryPanelOpen}
         isPanelPersistedOpen={isPersistedSecondaryPanelOpen}
+        onAutoFocusHandled={handleTerminalAutoFocusHandled}
         onOpenLink={handleOpenPanelLink}
         onSelectionAddToChat={handleRootPanelSelectionAddToChat}
         panelStateId={ROOT_COMPOSE_FIXED_PANEL_STATE_ID}
@@ -2995,17 +2970,19 @@ export function RootComposeView() {
       />
     ) : isNewTabActive ? (
       <NewTabPage
+        autoFocus={shouldAutoFocusNewTab}
         projectId={isProjectless ? undefined : projectId}
         environmentId={rootPanelEnvironmentId}
         hostId={rootProjectHostId}
         currentThreadId={rootPanelThreadId ?? ""}
-        focusRequest={newTabFocusRequest}
+        onAutoFocusHandled={handleNewTabAutoFocusHandled}
         onSelect={handleSelectFileSearchResult}
         recentItemsThreadId={ROOT_COMPOSE_FIXED_PANEL_STATE_ID}
         onOpenBrowser={rootPanelThreadId ? handleOpenBrowser : undefined}
         onStartTerminal={
           canCreateRootTerminal ? handleStartTerminal : undefined
         }
+        pluginActions={rootPluginPanelActions}
         showFileSearch={!isProjectless}
       />
     ) : activeWorkspaceFilePath !== null &&
@@ -3073,7 +3050,10 @@ export function RootComposeView() {
     ) : activePluginPanelTab ? (
       <PluginPanelTabContent
         tab={activePluginPanelTab}
-        threadId={rootPanelThreadId}
+        context={{
+          kind: "new-thread",
+          projectId: isProjectless ? null : projectId,
+        }}
       />
     ) : undefined;
   const isBrowserTabActive = activeBrowserTab !== null;
@@ -3212,12 +3192,13 @@ export function RootComposeView() {
   // Focus the composer once it mounts in place of the welcome screen.
   useEffect(() => {
     if (!startedComposing) return;
+    if (isCodexCliVersionBlocked) return;
     if (isPointerCoarse) return;
     const handle = window.requestAnimationFrame(() => {
       promptBoxRef.current?.focusEnd();
     });
     return () => window.cancelAnimationFrame(handle);
-  }, [isPointerCoarse, startedComposing]);
+  }, [isCodexCliVersionBlocked, isPointerCoarse, startedComposing]);
   const [machineSetupTarget, setMachineSetupTarget] =
     useState<ProjectMachineSetupDialogTarget | null>(null);
   const currentProjectName = currentProject?.name ?? null;
@@ -3410,7 +3391,7 @@ export function RootComposeView() {
       <CodexCliVersionBanner
         currentVersion={codexCliStatus.currentVersion}
         minimumSupportedVersion={codexCliStatus.minimumSupportedVersion}
-        issue={codexCliIssue}
+        canUpdate={codexCliIssue !== null}
         updating={
           composeHostId !== null &&
           (runningJobKey === providerCliJobKey(composeHostId, "codex") ||
@@ -3470,6 +3451,7 @@ export function RootComposeView() {
       textEffects={promptTextEffects}
       isSubmitting={createThread.isPending}
       disabled={isSubmitDisabled}
+      autoFocus={!isCodexCliVersionBlocked}
       zenModeStorageKey={rootComposeZenModeStorageKey}
       history={historyConfig}
       typeahead={typeaheadConfig}
@@ -3533,7 +3515,7 @@ export function RootComposeView() {
             fileTabContent,
             fileTabContentFillsRegion:
               activePluginPanelTab !== null &&
-              rootPanelThreadPanelActions.find(
+              rootPanelNewThreadPanelActions.find(
                 (candidate) =>
                   candidate.pluginId === activePluginPanelTab.pluginId &&
                   candidate.id === activePluginPanelTab.actionId,
@@ -3544,7 +3526,6 @@ export function RootComposeView() {
             showConversationCollapseControl: false,
             showGitDiffTab: false,
             showInfoTab: false,
-            showNewTabButton: false,
             inlinePanelToggle: panelTogglePlacement.inlinePanelToggle,
             onClose: closeSecondaryPanel,
             onCollapse: closeSecondaryPanel,

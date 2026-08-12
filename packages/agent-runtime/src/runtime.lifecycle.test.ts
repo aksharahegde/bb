@@ -9,6 +9,10 @@ import type {
 } from "./provider-adapter.js";
 import { promptTextInput } from "./test/prompt-input.js";
 import { createAgentRuntimeWithAdapters } from "./runtime.js";
+import {
+  classifyClaudeExecutionSettingsChange,
+  normalizeClaudeExecutionOptions,
+} from "./execution-options.js";
 import { fakeProviderScriptPath } from "./test/index.js";
 import {
   createFakeAdapter,
@@ -474,8 +478,8 @@ rl.on("line", (line) => {
         clientRequestId: "creq_222222223h",
         threadId: "t1",
         input: [promptTextInput({ text: "follow up" })],
-        instructions: "Updated instructions",
-        options: fullRuntimeOptions,
+        instructions: "Initial instructions",
+        options: { ...fullRuntimeOptions, model: "test-model-2" },
       });
 
       const reconfigureCommand = findLastRecordedCommand(
@@ -495,6 +499,86 @@ rl.on("line", (line) => {
         BB_ENVIRONMENT_ID: "env-1",
       });
       expect(reconfigureCommand.cwd).toBe(tmpDir);
+
+      await runtime.shutdown();
+    });
+
+    it("skips session reconfigure when the adapter classifies settings as live", async () => {
+      const recordedCommands: AdapterCommand[] = [];
+      const runtime = createAgentRuntimeWithAdapters({
+        workspacePath: tmpDir,
+        onEvent: () => undefined,
+        onToolCall: async () => ({
+          contentItems: [{ type: "inputText", text: "ok" }],
+          success: true,
+        }),
+        adapterFactory: () => ({
+          ...createRecordingAdapter({ recordedCommands, scriptPath }),
+          classifyExecutionSettingsChange:
+            classifyClaudeExecutionSettingsChange,
+          normalizeExecutionOptions: normalizeClaudeExecutionOptions,
+        }),
+      });
+
+      await runtime.startThread({
+        environmentId: "env-1",
+        threadId: "t1",
+        projectId: "p1",
+        providerId: "fake",
+        instructions: "Initial instructions",
+        options: {
+          ...fullRuntimeOptions,
+          memoryEnabled: true,
+          permissionMode: "auto",
+          permissionScope: "workspace",
+          approvalReviewer: "automatic",
+          permissionEscalation: "ask",
+          providerSubagentsEnabled: true,
+          serviceTier: "fast",
+        },
+      });
+
+      await runtime.runTurn({
+        clientRequestId: "creq_222222224h",
+        threadId: "t1",
+        input: [promptTextInput({ text: "follow up" })],
+        instructions: "Initial instructions",
+        options: {
+          ...fullRuntimeOptions,
+          memoryEnabled: false,
+          model: "test-model-2",
+          permissionMode: "auto",
+          permissionScope: "workspace",
+          approvalReviewer: "automatic",
+          permissionEscalation: "deny",
+          providerSubagentsEnabled: false,
+          reasoningLevel: "high",
+          serviceTier: "fast",
+          workflowsEnabled: true,
+        },
+      });
+
+      expect(
+        recordedCommands.some((command) => command.type === "thread/resume"),
+      ).toBe(false);
+      expect(
+        findLastRecordedCommand(recordedCommands, "thread/start"),
+      ).toMatchObject({
+        options: { serviceTier: "default" },
+      });
+      expect(
+        findLastRecordedCommand(recordedCommands, "turn/start"),
+      ).toMatchObject({
+        options: {
+          memoryEnabled: false,
+          model: "test-model-2",
+          permissionEscalation: "deny",
+          providerSubagentsEnabled: false,
+          reasoningLevel: "high",
+          serviceTier: "default",
+          workflowsEnabled: true,
+        },
+      });
 
       await runtime.shutdown();
     });
@@ -1247,7 +1331,9 @@ rl.on("line", (line) => {
       expect(builtCommands[0]).toMatchObject({
         type: "thread/resume",
         options: {
-          instructions: "Updated instructions",
+          // The resume keeps the session's frozen instructions; drifted
+          // instructions apply only when the next session is constructed.
+          instructions: "Initial instructions",
           model: "fake-model-2",
         },
       });
@@ -1259,6 +1345,52 @@ rl.on("line", (line) => {
           model: "fake-model-2",
         },
       });
+      await runtime.shutdown();
+    });
+
+    it("does not resume the thread when only instructions change", async () => {
+      const builtCommands: AdapterCommand[] = [];
+      const baseAdapter = createFakeAdapter(scriptPath);
+      const runtime = createAgentRuntimeWithAdapters({
+        workspacePath: tmpDir,
+        onEvent: () => {},
+        onToolCall: async () => ({
+          contentItems: [{ type: "inputText", text: "ok" }],
+          success: true,
+        }),
+        adapterFactory: () => ({
+          ...baseAdapter,
+          buildCommandPlan(command) {
+            builtCommands.push(command);
+            return baseAdapter.buildCommandPlan(command);
+          },
+        }),
+      });
+
+      await runtime.startThread({
+        environmentId: "env-1",
+        threadId: "t1",
+        projectId: "p1",
+        providerId: "fake",
+        options: fullRuntimeOptions,
+        instructions: "Initial instructions",
+      });
+      builtCommands.length = 0;
+
+      await runtime.runTurn({
+        clientRequestId: "creq_222222223y",
+        threadId: "t1",
+        input: [promptTextInput({ text: "follow up" })],
+        options: fullRuntimeOptions,
+        instructions: "Updated instructions",
+      });
+
+      // A resume would replace the live provider session and kill its
+      // running background tasks, so instruction drift alone must not
+      // reconfigure the thread.
+      expect(builtCommands.map((command) => command.type)).toEqual([
+        "turn/start",
+      ]);
       await runtime.shutdown();
     });
 
@@ -1319,7 +1451,7 @@ rl.on("line", (line) => {
       expect(builtCommands[0]).toMatchObject({
         type: "thread/resume",
         options: {
-          instructions: "Updated instructions",
+          instructions: "Initial instructions",
           model: "fake-model-2",
         },
       });

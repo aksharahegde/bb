@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { SkillProvider, SkillSummary } from "@bb/server-contract";
+import bbLogoUrl from "../../../../../assets/bb-logo.svg";
 import {
   ResourcePagination,
   useResourcePagination,
@@ -48,6 +49,7 @@ const RESOURCE_PROVIDER_FILTER_ORDER: Record<ResourceProviderFilter, number> = {
   bb: 0,
   "claude-code": 1,
   codex: 2,
+  "acp-cursor": 3,
 };
 
 const RESOURCE_PROVIDER_FILTERS: readonly ResourceProviderFilter[] = (
@@ -80,8 +82,8 @@ function providerFilterLabel(provider: ResourceProviderFilter): string {
 function skillSourceFilterId(skill: SkillSummary): ResourceSkillSourceFilter {
   if (skill.scope === "bb-builtin") return "bb-official";
   if (skill.scope === "plugin") return "included";
-  // Every remaining scope (bb-user/-project, claude-*, codex-*) is authored by
-  // the user, so the bucket is total and the filter can never strand a skill.
+  // Every remaining scope is authored by the user, so the bucket is total and
+  // the filter can never strand a skill.
   return "user";
 }
 
@@ -132,10 +134,10 @@ export function ProviderLogo({
   );
 }
 
-function BbLogo({ className = "size-4" }: { className?: string }) {
+export function BbLogo({ className = "size-4" }: { className?: string }) {
   return (
     <img
-      src="/bb-mark.svg"
+      src={bbLogoUrl}
       alt=""
       aria-hidden="true"
       className={cn(className, "object-contain dark:invert")}

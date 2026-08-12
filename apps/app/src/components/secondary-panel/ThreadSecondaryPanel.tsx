@@ -212,7 +212,7 @@ export function resolveSecondaryPanelHideControl() {
 export interface ThreadSecondaryPanelProps {
   activeTab: SecondaryFixedPanelTab | null;
   canUseGitUi: boolean;
-  defaultMergeBaseBranch?: string;
+  requestedMergeBaseBranch?: string;
   environmentId?: string;
   metadataContent: ReactNode;
   fileTabs?: SecondaryPanelFileTab[];
@@ -269,7 +269,10 @@ export interface ThreadSecondaryPanelProps {
   onPanelChange: (panel: ThreadSecondaryPanelTab) => void;
   onCollapse: () => void;
   onClose: () => void;
+  onClearPendingGitDiffIntent?: () => void;
   onOpenNewTab: () => void;
+  pendingGitDiffCommitSha?: string | null;
+  pendingGitDiffScrollPath?: string | null;
   workspaceRootPath?: string | null;
   onOpenFileInEditor?: (path: string) => void;
   onOpenFilePreview?: (path: string) => void;
@@ -322,7 +325,7 @@ function resolveActiveFixedPanel({
 export function ThreadSecondaryPanel({
   activeTab,
   canUseGitUi,
-  defaultMergeBaseBranch,
+  requestedMergeBaseBranch,
   environmentId,
   metadataContent,
   fileTabs,
@@ -343,7 +346,10 @@ export function ThreadSecondaryPanel({
   onPanelChange,
   onCollapse,
   onClose,
+  onClearPendingGitDiffIntent,
   onOpenNewTab,
+  pendingGitDiffCommitSha,
+  pendingGitDiffScrollPath,
   workspaceRootPath,
   onOpenFileInEditor,
   onOpenFilePreview,
@@ -451,12 +457,10 @@ export function ThreadSecondaryPanel({
   const isDiffPanelActive = activeFixedPanel === "git-diff";
   const showsGitDiffToolbar = isDiffPanelActive && !hasActiveFileTab;
   const shouldShowGitDiffTab = canUseGitUi && showGitDiffTab !== false;
-  // Inline, the panel slides out at a fixed width (clipped by the panel), so the
-  // body content must stay mounted through the close animation (and across
-  // open/close) instead of unmounting the instant `isOpen` flips — otherwise
-  // everything but the tab strip vanishes while the panel is still sliding. The
-  // drawer mounts its content only while open.
-  const shouldRenderFileTabContent = isOpen || !renderAsDrawer;
+  // Keep file content mounted across every close. The compact views defer the
+  // first full panel mount, then retain it inside their persistent drawer.
+  // Removing only this subtree would lose terminal and plugin state and move
+  // the later mount cost back into the next open action.
   const {
     gitDiffTarget,
     gitDiffSelectOptions,
@@ -465,7 +469,10 @@ export function ThreadSecondaryPanel({
   } = useGitDiffPanelState({
     environmentId,
     isDiffPanelActive,
-    defaultMergeBaseBranch,
+    requestedMergeBaseBranch,
+    onClearPendingGitDiffIntent,
+    pendingGitDiffCommitSha,
+    pendingGitDiffScrollPath,
   });
   // Share the diff tab's table of contents with the body: React Query dedupes
   // this against GitDiffTabContent's own fetch (same key), so the toolbar reads
@@ -803,13 +810,11 @@ export function ThreadSecondaryPanel({
               isTerminalTabActive || fileTabContentFillsRegion ? undefined : ""
             }
           >
-            {shouldRenderFileTabContent
-              ? (fileTabContent ?? (
-                  <EmptyStatePanel className="mx-4 rounded-lg">
-                    No file preview content provided.
-                  </EmptyStatePanel>
-                ))
-              : null}
+            {fileTabContent ?? (
+              <EmptyStatePanel className="mx-4 rounded-lg">
+                No file preview content provided.
+              </EmptyStatePanel>
+            )}
           </div>
         ) : isDiffPanelActive ? (
           <GitDiffTabContent
@@ -817,9 +822,11 @@ export function ThreadSecondaryPanel({
             target={gitDiffTarget}
             isDiffPanelActive={isDiffPanelActive}
             gitDiffViewOptions={gitDiffViewOptions}
+            onClearPendingGitDiffIntent={onClearPendingGitDiffIntent}
             onOpenFileInEditor={onOpenFileInEditor}
             onOpenFilePreview={onOpenFilePreview}
             onSelectionAddToChat={onSelectionAddToChat}
+            pendingGitDiffScrollPath={pendingGitDiffScrollPath}
             workspaceRootPath={workspaceRootPath}
           />
         ) : (

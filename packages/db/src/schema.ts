@@ -148,14 +148,8 @@ export const projectExecutionDefaults = sqliteTable(
 );
 
 export const systemExperiments = sqliteTable("system_experiments", {
-  id: text("id").primaryKey(),
-  claudeCodeMockCliTraffic: integer("claude_code_mock_cli_traffic", {
-    mode: "boolean",
-  }).notNull(),
-  newOnboarding: integer("new_onboarding", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  toolsHub: integer("tools_hub", { mode: "boolean" }).notNull().default(false),
+  key: text("key").primaryKey(),
+  value: integer("value", { mode: "boolean" }).notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
 
@@ -446,6 +440,9 @@ export const environments = sqliteTable(
     defaultBranch: text("default_branch"),
     mergeBaseBranch: text("merge_base_branch"),
     destroyAttemptId: text("destroy_attempt_id"),
+    // Durable product-policy clock. Unlike updatedAt, metadata polling cannot
+    // move the start of an accidental-archive recovery window.
+    retireRequestedAt: integer("retire_requested_at"),
     workspaceProvisionType: text("workspace_provision_type")
       .$type<WorkspaceProvisionType>()
       .notNull(),
@@ -613,7 +610,10 @@ export const threadSearchSegments = sqliteTable(
       table.sourceKind,
       table.sourceKey,
     ),
-    index("thread_search_segments_thread_idx").on(table.threadId),
+    index("thread_search_segments_thread_source_seq_idx").on(
+      table.threadId,
+      table.sourceSeq,
+    ),
   ],
 );
 
