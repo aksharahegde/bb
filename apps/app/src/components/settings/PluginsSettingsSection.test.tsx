@@ -52,6 +52,7 @@ function jsonOk(body: unknown): Response {
 function systemConfig(): SystemConfigResponse {
   return {
     generalSettings: defaultAppSettings,
+    mcpServers: [],
     keybindings: [],
     defaultKeybindings: [],
     keybindingOverrides: [],

@@ -1,7 +1,6 @@
 import {
   query,
   type CanUseTool,
-  type McpSdkServerConfigWithInstance,
   type Options,
   type Query,
   type SDKMessage,
@@ -24,7 +23,7 @@ export interface SdkSessionOptions {
   permissionMode?: ClaudePermissionMode;
   sandbox?: Options["sandbox"];
   hooks?: Options["hooks"];
-  mcpServers?: Record<string, McpSdkServerConfigWithInstance>;
+  mcpServers?: Options["mcpServers"];
   allowedTools?: string[];
   disallowedTools?: string[];
   tools?: string[];

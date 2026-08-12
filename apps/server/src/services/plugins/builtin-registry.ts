@@ -93,7 +93,7 @@ export const BUILTIN_PLUGINS = [
   {
     name: "workflows",
     pluginId: "workflows",
-    defaultEnabled: false,
+    defaultEnabled: true,
     category: "Workflow management",
   },
 ].map(

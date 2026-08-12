@@ -63,6 +63,7 @@ const offlineHost = host({
 function systemConfig(): SystemConfigResponse {
   return {
     generalSettings: defaultAppSettings,
+    mcpServers: [],
     keybindings: [],
     defaultKeybindings: [],
     keybindingOverrides: [],

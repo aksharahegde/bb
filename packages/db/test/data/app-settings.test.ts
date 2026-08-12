@@ -4,9 +4,11 @@ import {
   createConnection,
   getAppKeybindingOverrides,
   getAppSettings,
+  getMcpRegistry,
   migrate,
   setAppKeybindingOverrides,
   setAppSettings,
+  setMcpRegistry,
   type DbConnection,
 } from "../../src/index.js";
 
@@ -46,5 +48,28 @@ describe("app settings data", () => {
 
     setAppSettings(db, defaultAppSettings);
     expect(getAppKeybindingOverrides(db)).toEqual(overrides);
+  });
+
+  it("persists mcp registry without clobbering general settings", () => {
+    setAppSettings(db, {
+      ...defaultAppSettings,
+      caffeinate: true,
+    });
+    const registry = [
+      {
+        id: "srv_1",
+        name: "filesystem",
+        enabled: true,
+        transport: "stdio" as const,
+        command: "npx",
+        args: ["-y", "server"],
+        env: {},
+        envFromHost: ["TOKEN"],
+      },
+    ];
+    setMcpRegistry(db, registry);
+    expect(getMcpRegistry(db)).toEqual(registry);
+    setAppSettings(db, defaultAppSettings);
+    expect(getMcpRegistry(db)).toEqual(registry);
   });
 });

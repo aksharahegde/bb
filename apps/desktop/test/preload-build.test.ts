@@ -133,6 +133,7 @@ async function startDesktopSmokeServer(
           generalSettings: {
             caffeinate: false,
           },
+          mcpServers: [],
           hostDaemonPort: 38887,
           primaryHostPlatform: null,
           voiceTranscriptionEnabled: false,

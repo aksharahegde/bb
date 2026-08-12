@@ -506,6 +506,7 @@ describe("dispatchCommand", () => {
         providerThreadId: "provider-thread-1",
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       },
@@ -579,6 +580,7 @@ describe("dispatchCommand", () => {
         providerThreadId: "provider-thread-1",
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       },
@@ -843,6 +845,7 @@ describe("dispatchCommand", () => {
         providerThreadId: "provider-thread-1",
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       },
@@ -923,6 +926,7 @@ describe("dispatchCommand", () => {
       },
       instructions: "Be concise.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "append",
     };
@@ -999,6 +1003,7 @@ describe("dispatchCommand", () => {
       },
       instructions: "Be concise.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "append",
     };
@@ -1056,6 +1061,7 @@ describe("dispatchCommand", () => {
       },
       instructions: "Be concise.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "append",
     };
@@ -1480,6 +1486,7 @@ describe("dispatchCommand", () => {
       },
       instructions: "Be concise.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [fixture.source],
       instructionMode: "append",
     };
@@ -1541,6 +1548,7 @@ describe("dispatchCommand", () => {
         providerThreadId: "provider-thread-1",
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [fixture.source],
         instructionMode: "append",
       },

@@ -51,6 +51,7 @@ import { KeyboardSettingsSection } from "@/components/settings/KeyboardSettingsS
 import { MachinesSettingsSection } from "@/components/settings/MachinesSettingsSection";
 import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedThreadsSettingsSection";
 import { CliSkillsSettingsSection } from "@/components/settings/CliSkillsSettingsSection";
+import { McpSettingsSection } from "@/components/settings/McpSettingsSection";
 import {
   useUpdateGeneralSettings,
   useUpdateAppearance,
@@ -1162,6 +1163,8 @@ export function SettingsView() {
         <FileOpenersSettingsSection />
       </>
     );
+  } else if (activeSection === "mcp") {
+    content = <McpSettingsSection />;
   } else if (activeSection === "machines") {
     content = <MachinesSettingsSection />;
   } else if (activeSection === "updates") {

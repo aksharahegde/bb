@@ -4,6 +4,7 @@ import {
   type AppSettings,
   type AppThemeSelection,
   type Experiments,
+  type McpRegistry,
 } from "@bb/domain";
 import type { SystemInstallCliSkillsRequest } from "@bb/server-contract";
 import { sdk } from "@/lib/sdk";
@@ -74,6 +75,22 @@ export function useUpdateKeyboardSettings() {
         transaction: context,
       });
     },
+    onSuccess: () => {
+      invalidateSystemConfig({ queryClient });
+    },
+  });
+}
+
+/** Replace the Settings → MCP external server registry. */
+export function useUpdateMcpSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: {
+      errorMessage: "Failed to update MCP servers.",
+    },
+    mutationFn: (registry: McpRegistry) =>
+      sdk.system.updateMcpSettings(registry),
     onSuccess: () => {
       invalidateSystemConfig({ queryClient });
     },

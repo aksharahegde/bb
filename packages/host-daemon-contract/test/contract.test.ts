@@ -1061,7 +1061,7 @@ describe("host-daemon command schemas", () => {
   // Older daemons can verify stable against latest or hide the managed update,
   // so enrolled machines must update for the corrected status behavior.
   it("uses protocol version 106 for Claude Code status fixes", () => {
-    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(106);
+    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(107);
   });
 
   it("binds Plan cancellation to a required turn id and typed result", () => {
@@ -1774,6 +1774,7 @@ describe("host-daemon command schemas", () => {
         },
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
         requestId: CLIENT_REQUEST_ID,
@@ -1807,6 +1808,7 @@ describe("host-daemon command schemas", () => {
           providerThreadId: "prov_123",
           instructions: "Be concise.",
           dynamicTools: [],
+          externalMcpServers: [],
           injectedSkillSources: [],
           instructionMode: "append",
         },
@@ -1863,6 +1865,7 @@ describe("host-daemon command schemas", () => {
             inputSchema: { type: "object" },
           },
         ],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "replace",
       }),
@@ -1926,6 +1929,7 @@ describe("host-daemon command schemas", () => {
         },
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append" as const,
       };
@@ -1986,6 +1990,7 @@ describe("host-daemon command schemas", () => {
           providerThreadId: "provider_123",
           instructions: "Be a helpful coding agent.",
           dynamicTools: [],
+          externalMcpServers: [],
           injectedSkillSources: [],
           instructionMode: "append",
         },
@@ -2035,6 +2040,7 @@ describe("host-daemon command schemas", () => {
       },
       instructions: "Be a helpful thread.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "replace",
     };
@@ -2077,6 +2083,7 @@ describe("host-daemon command schemas", () => {
         providerThreadId: "provider_123",
         instructions: "Be a helpful coding agent.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       },
@@ -2138,6 +2145,7 @@ describe("host-daemon command schemas", () => {
       },
       instructions: "Be a helpful thread.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "append",
     };
@@ -2175,6 +2183,7 @@ describe("host-daemon command schemas", () => {
         acpLaunchSpec: ACP_LAUNCH_SPEC,
         instructions: "Be a helpful thread.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       },
@@ -2294,6 +2303,7 @@ describe("host-daemon command schemas", () => {
           providerThreadId: "provider_123",
           instructions: "Be a helpful coding agent.",
           dynamicTools: [],
+          externalMcpServers: [],
           injectedSkillSources: [],
           instructionMode: "append",
         },
@@ -2338,6 +2348,7 @@ describe("host-daemon command schemas", () => {
           providerThreadId: "provider_123",
           instructions: "Be a helpful coding agent.",
           dynamicTools: [],
+          externalMcpServers: [],
           injectedSkillSources: [],
           instructionMode: "append",
         },
@@ -2374,6 +2385,7 @@ describe("host-daemon command schemas", () => {
           providerId: "codex",
           instructions: "Be a helpful coding agent.",
           dynamicTools: [],
+          externalMcpServers: [],
         },
         target: { mode: "start" },
       }),
@@ -2404,6 +2416,7 @@ describe("host-daemon command schemas", () => {
         },
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
       }),
     ).toThrow();
   });
@@ -2435,6 +2448,7 @@ describe("host-daemon command schemas", () => {
         },
         instructions: "Be concise.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       }),
@@ -2468,6 +2482,7 @@ describe("host-daemon command schemas", () => {
           providerThreadId: "provider_123",
           instructions: "Be a helpful coding agent.",
           dynamicTools: [],
+          externalMcpServers: [],
           injectedSkillSources: [],
           instructionMode: "append",
         },

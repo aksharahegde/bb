@@ -32,6 +32,7 @@ export function assembleContextInstructions(
     switch (chunk.source) {
       case "standard":
       case "tool":
+      case "change_impact":
         sections.push(chunk.text);
         break;
       case "plugin_contribute":

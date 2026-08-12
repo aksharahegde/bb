@@ -191,6 +191,18 @@ to on. Set it with
 `bb settings keyboard hints <true|false>`. Turning it off hides the
 delayed shortcut badges without disabling any shortcuts.
 
+## External MCP servers
+
+Settings → MCP (and `bb mcp list|add|enable|disable|remove`) stores a host-wide
+registry of external MCP servers. Enabled entries are injected into Claude Code
+and ACP session MCP config. Codex and Pi ignore the registry in this release.
+
+- Prefer `--env-from-host KEY` / the Settings "env from host" field for secrets
+  instead of storing tokens in the database.
+- MCP tools are untrusted: do not auto-escalate permissions for them.
+- Host daemons must be on protocol 107+ to receive the field; older daemons
+  update automatically via the protocol version mismatch.
+
 | Area      | Command                       | Default                           | Availability             |
 | --------- | ----------------------------- | --------------------------------- | ------------------------ |
 | Threads   | New thread                    | `Mod+N` / `Mod+Shift+O`           | Desktop / web            |
@@ -693,9 +705,11 @@ reset time is ignored by the plugin.
 
 ### Workflows plugin
 
-The builtin Workflows plugin is disabled on fresh installations. Enable it
-under Extensions → Plugins or with `bb plugin enable workflows`. Its six
-settings accept base-10 integer strings through Extensions → Plugins or
+The builtin Workflows plugin is enabled on fresh installations. If disabled,
+re-enable it under Extensions → Plugins or with `bb plugin enable workflows`.
+Claude Code's native Workflow tool remains Claude-only (`supportsWorkflows`);
+Codex, Pi, and ACP do not expose that native tool. Its six settings accept
+base-10 integer strings through Extensions → Plugins or
 `bb plugin config workflows set <key> <value>`:
 
 | Key                    |    Default |       Allowed range | Behavior                                               |

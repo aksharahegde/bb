@@ -193,6 +193,7 @@ async function resumeThreadRuntimeIfMissing(
     options: command.options,
     instructions: resumeContext.instructions,
     dynamicTools: resumeContext.dynamicTools,
+    externalMcpServers: resumeContext.externalMcpServers,
     disallowedTools: resumeContext.disallowedTools,
     instructionMode: resumeContext.instructionMode,
   });
@@ -241,6 +242,7 @@ export async function startThread(
       options: command.options,
       instructions: command.instructions,
       dynamicTools: command.dynamicTools,
+      externalMcpServers: command.externalMcpServers,
       disallowedTools: command.disallowedTools,
       instructionMode: command.instructionMode,
       ...(command.fork ? { fork: command.fork } : {}),
@@ -279,6 +281,7 @@ export async function prepareThreadRewind(
     options: command.options,
     instructions: command.instructions,
     dynamicTools: command.dynamicTools,
+    externalMcpServers: command.externalMcpServers,
     disallowedTools: command.disallowedTools,
     instructionMode: command.instructionMode,
   });

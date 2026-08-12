@@ -130,6 +130,18 @@ same resolved bindings. The complete default table is in docs/configuration.md.
   bb settings keyboard set <command> <shortcut|disabled>
   bb settings keyboard reset [command]
 
+External MCP servers (Claude Code / ACP only; Codex and Pi ignore them):
+
+  bb mcp list [--json]
+  bb mcp add <name> --command <bin> [--arg <a>]... [--env KEY=VALUE]...
+                     [--env-from-host KEY]... [--disabled]
+  bb mcp add <name> --transport http|sse --url <url> [--disabled]
+  bb mcp enable|disable|remove <name> [--json]
+
+MCP tools are untrusted. Prefer `--env-from-host` for secrets. Enabled servers
+are injected into new Claude Code / ACP sessions after the host daemon is on
+protocol 107+.
+
 Host files and voice transcription
 
   bb file read|write|list|paths|mkdir|move|remove ...

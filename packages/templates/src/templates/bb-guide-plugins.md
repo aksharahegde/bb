@@ -36,8 +36,12 @@ detail page, or configure it with
 `bb plugin config provider-retry set maximumWait <value>`.
 
 The builtin Workflows plugin runs durable provider-independent JavaScript
-orchestration. It is disabled on fresh installations; enable `workflows` under
-Extensions → Plugins or run `bb plugin enable workflows` before using:
+orchestration and is enabled on fresh installations. If it was previously
+disabled, enable `workflows` under Extensions → Plugins or run
+`bb plugin enable workflows`. Separately, Claude Code's native Workflow tool
+is Claude-only (`supportsWorkflows`); Codex, Pi, and ACP do not expose that
+native tool — keep the plugin enabled anyway; unsupported providers simply
+omit Claude-native workflow surfaces:
 
   bb workflows validate (--script '<javascript>'|--source '<javascript>'|
                         --file <path>|--name <name>)

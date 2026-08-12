@@ -30,6 +30,7 @@ function responseJson(body: unknown, status = 200): Response {
 function systemConfig(): SystemConfigResponse {
   return {
     generalSettings: defaultAppSettings,
+    mcpServers: [],
     keybindings: [],
     defaultKeybindings: [],
     keybindingOverrides: [],

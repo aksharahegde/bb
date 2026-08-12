@@ -36,6 +36,14 @@ Pass `--project <id>` when not running inside a bb thread.
 - `assign_agent_to_zone` — move an agent to a named office zone
 - `list_roster_agents` — list agents, optionally filtered by status or role
 
+## Seed agents
+
+Empty rosters are seeded with Bug Hunter, Refactor Guru, Doc Specialist, CI
+Triage, Security Reviewer, and Test Author. Seeding runs only when
+`agents.json` has zero agents — existing rosters are not auto-updated. To add
+the new specialists to an existing roster, create them with `bb roster create`
+(or archive everyone and reopen the panel to re-seed an empty roster).
+
 ## UI
 
 Open **Agent Roaster** in the sidebar for:
