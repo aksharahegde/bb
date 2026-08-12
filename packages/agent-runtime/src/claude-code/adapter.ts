@@ -1148,6 +1148,10 @@ export function createClaudeCodeProviderAdapter(
               ...(dynamicTools && dynamicTools.length > 0
                 ? { dynamicTools }
                 : {}),
+              ...(command.externalMcpServers &&
+              command.externalMcpServers.length > 0
+                ? { externalMcpServers: command.externalMcpServers }
+                : {}),
               ...(command.disallowedTools && command.disallowedTools.length > 0
                 ? { disallowedTools: [...command.disallowedTools] }
                 : {}),
@@ -1219,6 +1223,10 @@ export function createClaudeCodeProviderAdapter(
                 command.options.providerSubagentsEnabled,
               ...(dynamicTools && dynamicTools.length > 0
                 ? { dynamicTools }
+                : {}),
+              ...(command.externalMcpServers &&
+              command.externalMcpServers.length > 0
+                ? { externalMcpServers: command.externalMcpServers }
                 : {}),
               ...(command.disallowedTools && command.disallowedTools.length > 0
                 ? { disallowedTools: [...command.disallowedTools] }
@@ -1366,6 +1374,10 @@ export function createClaudeCodeProviderAdapter(
                 command.options.providerSubagentsEnabled,
               ...(dynamicTools && dynamicTools.length > 0
                 ? { dynamicTools }
+                : {}),
+              ...(command.externalMcpServers &&
+              command.externalMcpServers.length > 0
+                ? { externalMcpServers: command.externalMcpServers }
                 : {}),
               ...(command.disallowedTools && command.disallowedTools.length > 0
                 ? { disallowedTools: [...command.disallowedTools] }

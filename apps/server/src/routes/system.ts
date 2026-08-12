@@ -5,12 +5,14 @@ import {
   getAppSettings,
   getAppKeybindingOverrides,
   getExperiments,
+  getMcpRegistry,
   getStoredFaviconColor,
   getStoredThemeId,
   hasActiveThreadAttention,
   setAppSettings,
   setAppKeybindingOverrides,
   setExperiments,
+  setMcpRegistry,
   setStoredAppearance,
 } from "@bb/db";
 import {
@@ -151,6 +153,7 @@ export function registerSystemRoutes(
     const primaryHostId = resolvePrimaryHostId(deps);
     return {
       generalSettings: getAppSettings(deps.db),
+      mcpServers: getMcpRegistry(deps.db),
       keybindings: applyAppKeybindingOverrides(
         DEFAULT_APP_KEYBINDINGS,
         keybindingOverrides,
@@ -195,6 +198,12 @@ export function registerSystemRoutes(
     setAppKeybindingOverrides(deps.db, payload);
     deps.hub.notifySystem(["config-changed"]);
     return context.json(getAppKeybindingOverrides(deps.db));
+  });
+
+  put(routes.mcpSettings, (context, payload) => {
+    setMcpRegistry(deps.db, payload);
+    deps.hub.notifySystem(["config-changed"]);
+    return context.json(getMcpRegistry(deps.db));
   });
 
   put(routes.experiments, (context, payload) => {

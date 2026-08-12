@@ -2,7 +2,10 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import type { ThreadListEntry } from "@bb/domain";
+import {
+  computeChangeImpact,
+  type ThreadListEntry,
+} from "@bb/domain";
 import { Badge } from "@bb/shared-ui/badge";
 import { Button } from "@bb/shared-ui/button";
 import {
@@ -198,6 +201,43 @@ export function MissionControlView() {
     retry: false,
   });
 
+  const impactEnvironmentIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const thread of threads) {
+      if (!thread.environmentId) continue;
+      if (!isBusyThread(thread) && thread.status !== "error") continue;
+      if (!ids.includes(thread.environmentId)) ids.push(thread.environmentId);
+      if (ids.length >= 8) break;
+    }
+    return ids;
+  }, [threads]);
+
+  const impactQuery = useQuery({
+    queryKey: ["mission-control", "impact", impactEnvironmentIds],
+    enabled: impactEnvironmentIds.length > 0,
+    queryFn: async () => {
+      const byEnvironment = new Map<string, ReturnType<typeof computeChangeImpact>>();
+      for (const environmentId of impactEnvironmentIds) {
+        try {
+          const result = await sdk.environments.diffFiles({
+            environmentId,
+            target: "uncommitted",
+          });
+          if (result.outcome !== "available") continue;
+          const report = computeChangeImpact({
+            changedFiles: result.files.map((file) => file.path),
+          });
+          byEnvironment.set(environmentId, report);
+        } catch {
+          // Skip environments that cannot serve diffs.
+        }
+      }
+      return byEnvironment;
+    },
+    refetchInterval: 30_000,
+    retry: false,
+  });
+
   const summary = useMemo(() => {
     let pending = 0;
     let busy = 0;
@@ -247,6 +287,20 @@ export function MissionControlView() {
     return null;
   }, [ciQuery.data]);
 
+  const impactFleetBadge = useMemo(() => {
+    const map = impactQuery.data;
+    if (!map || map.size === 0) return null;
+    let high = 0;
+    let medium = 0;
+    for (const report of map.values()) {
+      if (report.severity === "high") high += 1;
+      else if (report.severity === "medium") medium += 1;
+    }
+    if (high > 0) return `impact high ${high}`;
+    if (medium > 0) return `impact medium ${medium}`;
+    return null;
+  }, [impactQuery.data]);
+
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -269,6 +323,7 @@ export function MissionControlView() {
               void fleetQuery.refetch();
               void graphifyQuery.refetch();
               void ciQuery.refetch();
+              void impactQuery.refetch();
             }}
           >
             Refresh
@@ -289,6 +344,11 @@ export function MissionControlView() {
         {ciFleetBadge ? (
           <Badge variant="outline" data-testid="mission-ci-badge">
             {ciFleetBadge}
+          </Badge>
+        ) : null}
+        {impactFleetBadge ? (
+          <Badge variant="outline" data-testid="mission-impact-badge">
+            {impactFleetBadge}
           </Badge>
         ) : null}
       </div>
@@ -329,6 +389,14 @@ export function MissionControlView() {
             threadId: thread.id,
           });
           const ciBadge = ciBadgeForSummary(ciQuery.data?.threadCi.get(thread.id));
+          const impact =
+            thread.environmentId !== null
+              ? impactQuery.data?.get(thread.environmentId)
+              : undefined;
+          const impactBadge =
+            impact && (impact.severity === "high" || impact.severity === "medium")
+              ? `impact ${impact.severity}`
+              : null;
           return (
             <Link
               key={thread.id}
@@ -353,6 +421,9 @@ export function MissionControlView() {
                     <Badge variant="outline">{indicatorLabel}</Badge>
                   ) : null}
                   {ciBadge ? <Badge variant="outline">{ciBadge}</Badge> : null}
+                  {impactBadge ? (
+                    <Badge variant="outline">{impactBadge}</Badge>
+                  ) : null}
                   {fleetBadges(thread).map((badge) => (
                     <Badge key={badge} variant="outline">
                       {badge}
@@ -367,7 +438,8 @@ export function MissionControlView() {
 
       <p className="text-xs text-muted-foreground">
         Route: <code>{MISSION_CONTROL_ROUTE_PATH}</code>. Use Graphify via{" "}
-        <code>bb graphify status</code>; CI via <code>bb github checks</code>.
+        <code>bb graphify status</code>; CI via <code>bb github checks</code>;
+        impact via <code>bb impact</code>.
       </p>
     </div>
   );

@@ -44,6 +44,7 @@ vi.mock("@/hooks/queries/system-queries", () => ({
       generalSettings: {
         showKeyboardHints: false,
       },
+      mcpServers: [],
       keybindings: commandFixture.keybindings,
     },
   }),

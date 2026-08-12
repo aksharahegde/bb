@@ -1,6 +1,7 @@
-import { getEnvironment, getHost, getProject } from "@bb/db";
+import { getEnvironment, getHost, getMcpRegistry, getProject } from "@bb/db";
 import type {
   DynamicTool,
+  ExternalMcpServer,
   InstructionMode,
   PermissionEscalation,
   ProjectExecutionDefaults,
@@ -12,6 +13,7 @@ import type {
   WorkspaceProvisionType,
   EnvironmentStatus,
 } from "@bb/domain";
+import { toExternalMcpServers } from "@bb/domain";
 import type { HostDaemonInjectedSkillSource } from "@bb/host-daemon-contract";
 import { renderTemplate } from "@bb/templates";
 import { ApiError } from "../../errors.js";
@@ -36,9 +38,14 @@ import { UPDATE_ENVIRONMENT_DIRECTORY_TOOL } from "./thread-environment-director
 import {
   assembleContextInstructions,
   CONTEXT_SOURCE_PRIORITY,
+  DEFAULT_CHANGE_IMPACT_MAX_CHARS,
   DEFAULT_PLUGIN_CONTRIBUTE_MAX_CHARS,
   type ContextChunk,
 } from "../context/index.js";
+import {
+  renderChangeImpactContextChunk,
+} from "@bb/domain";
+import { resolveEnvironmentChangeImpact } from "../impact/index.js";
 import {
   DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH,
   WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH,
@@ -89,6 +96,7 @@ export interface ResolvePermissionEscalationArgs {
 
 export interface ResolvedThreadRuntimeCommandConfig {
   dynamicTools: DynamicTool[];
+  externalMcpServers: ExternalMcpServer[];
   injectedSkillSources: HostDaemonInjectedSkillSource[];
   instructionMode: InstructionMode;
   instructions: string;
@@ -97,6 +105,10 @@ export interface ResolvedThreadRuntimeCommandConfig {
   threadStoragePath: string;
   workspacePath: string;
   workspaceProvisionType: WorkspaceProvisionType;
+}
+
+function providerSupportsExternalMcp(providerId: string): boolean {
+  return providerId === "claude-code" || providerId.startsWith("acp-");
 }
 
 function requireWorkspacePath(
@@ -284,6 +296,27 @@ export async function resolveThreadRuntimeCommandConfig(
       });
     }
   }
+  if (args.environment.status === "ready" && args.environment.path) {
+    const impact = await resolveEnvironmentChangeImpact(deps, {
+      hostId: args.environment.hostId,
+      environmentId: args.environment.id,
+      workspacePath: args.environment.path,
+      workspaceProvisionType: args.environment.workspaceProvisionType,
+    });
+    if (impact && impact.severity !== "none") {
+      const text = renderChangeImpactContextChunk(impact);
+      if (text.trim().length > 0) {
+        contextChunks.push({
+          id: "change_impact",
+          source: "change_impact",
+          provenance: "change-impact",
+          priority: CONTEXT_SOURCE_PRIORITY.change_impact,
+          text,
+          maxChars: DEFAULT_CHANGE_IMPACT_MAX_CHARS,
+        });
+      }
+    }
+  }
   // Legacy plugin-level contributeInstructions providers (after per-tool
   // snippets, before configure dynamic instructions).
   for (const contribution of listPluginInstructionContributions()) {
@@ -354,6 +387,9 @@ export async function resolveThreadRuntimeCommandConfig(
   });
   return {
     dynamicTools,
+    externalMcpServers: providerSupportsExternalMcp(args.thread.providerId)
+      ? toExternalMcpServers(getMcpRegistry(deps.db))
+      : [],
     injectedSkillSources,
     instructionMode: "append",
     instructions,

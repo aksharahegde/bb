@@ -5,6 +5,7 @@ import {
   availableModelSchema,
   discoveredWorkspacePropertiesSchema,
   dynamicToolSchema,
+  externalMcpServerSchema,
   instructionModeSchema,
   pendingInteractionResolutionSchema,
   promptInputSchema,
@@ -36,7 +37,7 @@ import {
   providerCliStatusResponseSchema,
 } from "./local.js";
 
-export const HOST_DAEMON_PROTOCOL_VERSION = 106 as const;
+export const HOST_DAEMON_PROTOCOL_VERSION = 107 as const;
 
 export {
   BRANCH_LIST_LIMIT_MAX,
@@ -229,6 +230,7 @@ const hostDaemonThreadRuntimeContextSchema = z
     options: runtimeThreadExecutionOptionsSchema,
     instructions: z.string().min(1),
     dynamicTools: z.array(dynamicToolSchema),
+    externalMcpServers: z.array(externalMcpServerSchema),
     injectedSkillSources: z.array(hostDaemonInjectedSkillSourceSchema),
     disallowedTools: z.array(z.string()).optional(),
     instructionMode: instructionModeSchema,

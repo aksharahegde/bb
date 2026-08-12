@@ -144,6 +144,7 @@ vi.mock("@/hooks/queries/system-queries", () => ({
     data: {
       defaultKeybindings: testState.defaultKeybindings,
       generalSettings: defaultAppSettings,
+      mcpServers: [],
       keybindingOverrides: testState.keybindingOverrides,
     },
   }),

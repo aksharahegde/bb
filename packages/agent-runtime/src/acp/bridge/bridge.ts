@@ -28,6 +28,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
   reasoningEffortsForLevels,
+  resolveExternalMcpServerEnv,
   type AvailableModel,
   type PromptInput,
   type ReasoningLevel,
@@ -343,23 +344,38 @@ async function ensureDynamicToolBridge(): Promise<AcpDynamicToolBridge> {
 async function buildSessionMcpServers(
   params: AcpBridgeThreadStartParams,
 ): Promise<AcpMcpServerConfig[]> {
+  const servers: AcpMcpServerConfig[] = [];
   const dynamicTools = params.dynamicTools ?? [];
-  if (dynamicTools.length === 0) {
-    return [];
+  if (dynamicTools.length > 0) {
+    const bridge = await ensureDynamicToolBridge();
+    servers.push(
+      buildAcpMcpServerConfig({
+        bridgeArgs: resolveBridgeProcessArgsForMcpServer(),
+        command: process.execPath,
+        dynamicTools,
+        host: bridge.host,
+        port: bridge.port,
+        runtimeEnv: resolveBridgeProcessEnvForMcpServer(),
+        threadId: params.threadId,
+        token: bridge.token,
+      }),
+    );
   }
-  const bridge = await ensureDynamicToolBridge();
-  return [
-    buildAcpMcpServerConfig({
-      bridgeArgs: resolveBridgeProcessArgsForMcpServer(),
-      command: process.execPath,
-      dynamicTools,
-      host: bridge.host,
-      port: bridge.port,
-      runtimeEnv: resolveBridgeProcessEnvForMcpServer(),
-      threadId: params.threadId,
-      token: bridge.token,
-    }),
-  ];
+  for (const server of params.externalMcpServers ?? []) {
+    if (server.transport !== "stdio" || !server.command) {
+      continue;
+    }
+    const env = Object.entries(
+      resolveExternalMcpServerEnv(server, process.env),
+    ).map(([name, value]) => ({ name, value }));
+    servers.push({
+      name: server.name,
+      command: server.command,
+      args: [...(server.args ?? [])],
+      env,
+    });
+  }
+  return servers;
 }
 
 // ---------------------------------------------------------------------------

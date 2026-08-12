@@ -19,6 +19,7 @@ describe("bb settings commands", () => {
     stubServerApi({
       "v1.system.config.$get": vi.fn(async () => ({
         generalSettings: defaultAppSettings,
+        mcpServers: [],
         experiments: defaultExperiments,
       })),
       "v1.settings.general.$put": put,
@@ -39,6 +40,7 @@ describe("bb settings commands", () => {
     stubServerApi({
       "v1.system.config.$get": vi.fn(async () => ({
         generalSettings: defaultAppSettings,
+        mcpServers: [],
         experiments: defaultExperiments,
       })),
       "v1.settings.general.$put": put,
@@ -56,6 +58,7 @@ describe("bb settings commands", () => {
     stubServerApi({
       "v1.system.config.$get": vi.fn(async () => ({
         generalSettings: defaultAppSettings,
+        mcpServers: [],
         experiments: defaultExperiments,
       })),
       "v1.settings.general.$put": put,
@@ -76,6 +79,7 @@ describe("bb settings commands", () => {
     stubServerApi({
       "v1.system.config.$get": vi.fn(async () => ({
         generalSettings: defaultAppSettings,
+        mcpServers: [],
         experiments: defaultExperiments,
       })),
       "v1.settings.experiments.$put": put,
@@ -120,6 +124,7 @@ describe("bb settings commands", () => {
     stubServerApi({
       "v1.system.config.$get": vi.fn(async () => ({
         generalSettings: defaultAppSettings,
+        mcpServers: [],
         experiments: defaultExperiments,
       })),
       "v1.settings.experiments.$put": vi.fn(async ({ json }) => json),

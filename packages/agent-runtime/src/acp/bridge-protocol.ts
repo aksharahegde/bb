@@ -12,6 +12,7 @@ import {
   acpNativeReasoningSchema as acpBridgeNativeReasoningSchema,
   acpReasoningCliSchema as acpBridgeReasoningCliSchema,
   dynamicToolSchema,
+  externalMcpServerSchema,
   permissionEscalationSchema,
   promptInputSchema,
   reasoningLevelSchema,
@@ -134,6 +135,8 @@ const acpBridgeSessionParamsSchema = z.object({
   /** Server-owned instructions; prepended to the session's first prompt. */
   instructions: z.string().optional(),
   dynamicTools: z.array(dynamicToolSchema).optional(),
+  /** External MCP servers from Settings → MCP (stdio only for ACP in P1). */
+  externalMcpServers: z.array(externalMcpServerSchema).optional(),
 });
 
 export const acpBridgeThreadStartParamsSchema = acpBridgeSessionParamsSchema;

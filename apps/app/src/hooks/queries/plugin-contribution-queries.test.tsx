@@ -22,6 +22,7 @@ vi.mock("@/lib/sdk", () => ({
 function systemConfig(): SystemConfigResponse {
   return {
     generalSettings: defaultAppSettings,
+    mcpServers: [],
     keybindings: [],
     defaultKeybindings: [],
     keybindingOverrides: [],

@@ -1376,6 +1376,9 @@ export function createAcpProviderAdapter(
       ...(command.dynamicTools && command.dynamicTools.length > 0
         ? { dynamicTools: command.dynamicTools }
         : {}),
+      ...(command.externalMcpServers && command.externalMcpServers.length > 0
+        ? { externalMcpServers: command.externalMcpServers }
+        : {}),
     };
   }
 

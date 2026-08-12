@@ -10,6 +10,7 @@ import { wsManager } from "./ws";
 // Offline/unavailable app behavior should fail closed independently of server defaults.
 const unavailableSystemConfig: SystemConfigResponse = {
   generalSettings: defaultAppSettings,
+  mcpServers: [],
   keybindings: [],
   defaultKeybindings: [],
   keybindingOverrides: [],

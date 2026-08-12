@@ -75,6 +75,10 @@ import {
   type ToolCallForwarder,
 } from "./tool-proxy-mcp.js";
 import {
+  buildClaudeExternalMcpServers,
+  mergeClaudeMcpServers,
+} from "./external-mcp.js";
+import {
   type ClaudeInteractiveResponse,
   type ClaudePermissionMode,
   type ClaudePermissionRequestApprovalParams,
@@ -260,6 +264,7 @@ interface SessionConstructionConfig {
   claudeCodeMockCliTraffic: ThreadResumeParams["claudeCodeMockCliTraffic"];
   config: ThreadResumeParams["config"];
   dynamicTools: ThreadResumeParams["dynamicTools"];
+  externalMcpServers: ThreadResumeParams["externalMcpServers"];
   // Live settings are not part of the comparable construction config: the
   // bridge applies them through SDK controls without replacing the session.
   sessionOptions: Omit<
@@ -567,6 +572,7 @@ function toSessionConstructionConfig(
     claudeCodeMockCliTraffic: params.claudeCodeMockCliTraffic,
     config: params.config,
     dynamicTools: params.dynamicTools,
+    externalMcpServers: params.externalMcpServers,
     sessionOptions: {
       additionalWorkspaceWriteRoots: params.additionalWorkspaceWriteRoots,
       baseInstructions: params.baseInstructions,
@@ -1764,6 +1770,14 @@ async function handleThreadStart(
     sessionOptions.allowedTools = getAllowedToolNames(params.dynamicTools);
   }
 
+  const externalMcpServers = buildClaudeExternalMcpServers(
+    params.externalMcpServers,
+  );
+  sessionOptions.mcpServers = mergeClaudeMcpServers(
+    sessionOptions.mcpServers,
+    externalMcpServers,
+  );
+
   const threadSession = createThreadSession({
     mockCliTrafficProxy: preparedEnv.mockCliTrafficProxy,
     liveSettings: toInitialLiveSessionSettings(params),
@@ -1839,6 +1853,14 @@ async function handleThreadResume(
     sessionOptions.mcpServers = { [BRIDGE_MCP_SERVER_NAME]: mcpServer };
     sessionOptions.allowedTools = getAllowedToolNames(params.dynamicTools);
   }
+
+  const externalMcpServers = buildClaudeExternalMcpServers(
+    params.externalMcpServers,
+  );
+  sessionOptions.mcpServers = mergeClaudeMcpServers(
+    sessionOptions.mcpServers,
+    externalMcpServers,
+  );
   const threadSession = createThreadSession({
     mockCliTrafficProxy: preparedEnv.mockCliTrafficProxy,
     liveSettings: toInitialLiveSessionSettings(params),
@@ -1908,6 +1930,14 @@ async function handleThreadFork(
     sessionOptions.mcpServers = { [BRIDGE_MCP_SERVER_NAME]: mcpServer };
     sessionOptions.allowedTools = getAllowedToolNames(params.dynamicTools);
   }
+
+  const externalMcpServers = buildClaudeExternalMcpServers(
+    params.externalMcpServers,
+  );
+  sessionOptions.mcpServers = mergeClaudeMcpServers(
+    sessionOptions.mcpServers,
+    externalMcpServers,
+  );
   const threadSession = createThreadSession({
     mockCliTrafficProxy: preparedEnv.mockCliTrafficProxy,
     liveSettings: toInitialLiveSessionSettings(params),
