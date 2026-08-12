@@ -15,6 +15,7 @@ export const SETTINGS_PROVIDER_ROUTE_PATH = "/settings/providers/:providerId";
 // :section route, which has no splat and so never matches this two-segment path.
 export const SETTINGS_MACHINE_ROUTE_PATH = "/settings/machines/:hostId";
 export const TOOLS_ROUTE_PATH = "/tools";
+export const MISSION_CONTROL_ROUTE_PATH = "/mission";
 export const TOOLS_SKILLS_ROUTE_PATH = "/tools/skills";
 export const TOOLS_SKILL_DETAIL_ROUTE_PATH = "/tools/skills/library/:skillId";
 export const LEGACY_TOOLS_SKILL_DETAIL_ROUTE_PATH =

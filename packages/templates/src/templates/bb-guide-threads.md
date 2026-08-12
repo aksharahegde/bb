@@ -233,5 +233,13 @@ Lifecycle:
   bb thread delete <id>                    Delete permanently
     --yes                                  Skip confirmation
 
+Mission Control (fleet view):
+
+  bb mission list [--project <id>] [--include-hidden] [--json]
+  bb mission status [--project <id>] [--json]
+
+  Summarize active/waiting/failed threads and pending interactions. The app
+  route is /mission.
+
 Read-only commands require a thread ID or --self where supported.
 Mutating thread lifecycle and messaging commands require an explicit ID or --self.

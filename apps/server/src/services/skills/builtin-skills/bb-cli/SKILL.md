@@ -331,6 +331,13 @@ Give spawned threads clear prompts: objective, constraints, expected deliverable
 validation to perform, and what to report back. Ask for outcome, changed files
 or artifacts, validation performed, and blockers.
 
+## Mission Control
+
+- Use `bb mission list [--project <id>] [--include-hidden] [--json]` for a fleet
+  list of non-archived threads (activity, pending input, parent links).
+- Use `bb mission status [--project <id>] [--json]` for busy / pending / failed /
+  idle counts. The app surface is `/mission`.
+
 ## Coordinating Work
 
 - Use one clear owner per task.
@@ -689,7 +696,7 @@ them by mixing ink into canvas), the `--primary` accent, the secondary text tier
   (except `side-chat`, which is gated by the **"Side chat plugin"**
   experiment); official plugins install from the bundled store on demand.
 - **BB Official plugins** (store under `/api/v1/plugin-catalog`):
-  - BB's official plugins (GitHub, Docs, Memory, and Tasks) ship
+  - BB's official plugins (GitHub, Docs, Memory, Tasks, and Graphify) ship
     bundled inside the app and install from the local copy — no network. Installed official
     plugins are pinned to the bundled copy and update with BB app releases.
   - `bb plugin search <query> [--json]` — search the official plugins by id,
@@ -697,7 +704,7 @@ them by mixing ink into canvas), the `--primary` accent, the secondary text tier
     requires newer bb.
 - Commands:
   - `bb plugin install <src>` — official plugin name (github, docs, memory,
-    tasks), HTTP(S) Git repository URL, local path, `builtin:<name>`,
+    tasks, graphify), HTTP(S) Git repository URL, local path, `builtin:<name>`,
     `git:<url>[@<ref>]`, or `npm:<package>[@<version|tag|range>]` (npm on PATH
     required for `npm:`). Repository URLs and prefixes `path:` / `npm:` /
     `git:` / `builtin:` skip official-plugin resolution. To pin or range an

@@ -10,6 +10,7 @@ import { registerProjectCommands } from "./commands/project.js";
 import { registerPluginCommands } from "./commands/plugin.js";
 import { registerProviderCommands } from "./commands/provider.js";
 import { registerStatusCommand } from "./commands/status.js";
+import { registerMissionCommand } from "./commands/mission.js";
 import { registerTerminalCommands } from "./commands/terminal.js";
 import { registerSettingsCommands } from "./commands/settings.js";
 import { registerSkillCommands } from "./commands/skill.js";
@@ -84,6 +85,7 @@ function getContext() {
 
 // Register all command groups
 registerStatusCommand(program, getUrl, getContext);
+registerMissionCommand(program, getUrl);
 registerSettingsCommands(program, getUrl);
 registerProjectCommands(program, getUrl);
 registerProviderCommands(program, getUrl);

@@ -156,6 +156,12 @@ export const OFFICIAL_PLUGINS = [
     defaultEnabled: true,
     category: "Agent interaction",
   },
+  {
+    name: "graphify",
+    pluginId: "graphify",
+    defaultEnabled: true,
+    category: "Developer tools",
+  },
 ].map(
   (plugin): BundledPluginDefinition => ({
     ...plugin,

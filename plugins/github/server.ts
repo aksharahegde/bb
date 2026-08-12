@@ -10,6 +10,12 @@
 import { execFile } from "node:child_process";
 import { defineRpcContract, type BbPluginApi } from "@bb/plugin-sdk";
 import { z } from "zod";
+import {
+  formatChecksSummaryLine,
+  normalizeStatusCheckRollup,
+  summarizeChecks,
+  type ChecksSummary,
+} from "./src/checks.js";
 
 const SYNC_INTERVAL_MS = 5 * 60_000;
 const ISSUE_PAGE = 100;
@@ -32,6 +38,7 @@ const nonBlankStringSchema = z
 const repoInfoSchema = z
   .object({ repo: repoNameSchema, projectId: z.string().nullable() })
   .strict();
+
 const itemSchema = z
   .object({
     repo: repoNameSchema,
@@ -45,6 +52,16 @@ const itemSchema = z
     url: z.string(),
     body: z.string(),
     updatedAt: z.string(),
+    checksSummary: z
+      .object({
+        success: z.number().int().nonnegative(),
+        failure: z.number().int().nonnegative(),
+        pending: z.number().int().nonnegative(),
+        neutral: z.number().int().nonnegative(),
+        failingNames: z.array(z.string()),
+      })
+      .strict()
+      .nullable(),
   })
   .strict();
 const syncResultSchema = z
@@ -271,6 +288,7 @@ interface CachedItem {
   url: string;
   body: string;
   updatedAt: string;
+  checksSummary: ChecksSummary | null;
 }
 
 interface GhListEntry {
@@ -283,6 +301,7 @@ interface GhListEntry {
   url?: unknown;
   body?: unknown;
   updatedAt?: unknown;
+  statusCheckRollup?: unknown;
 }
 
 type GhRunner = (args: string[]) => Promise<string>;
@@ -387,6 +406,19 @@ export function validateGithubCliArgs(argv: string[]): string | null {
       ? null
       : `Invalid repository "${arg}"; expected owner/repo.`;
   }
+  if (sub === "checks") {
+    if (arg === undefined) return null;
+    if (/^\d+$/.test(arg)) return null;
+    if (arg.includes("#")) {
+      const [repo, number] = arg.split("#");
+      return isRepoName(repo ?? "") && /^\d+$/.test(number ?? "")
+        ? null
+        : `Invalid pull reference "${arg}"; expected owner/repo#number or number.`;
+    }
+    return isRepoName(arg)
+      ? null
+      : `Invalid repository "${arg}"; expected owner/repo, owner/repo#number, or number.`;
+  }
   return null;
 }
 
@@ -397,19 +429,34 @@ function toItems(raw: string, repo: string, kind: "issue" | "pr"): CachedItem[] 
       (entry): entry is GhListEntry & { number: number } =>
         typeof entry?.number === "number",
     )
-    .map((entry) => ({
-      repo,
-      number: entry.number,
-      kind,
-      title: String(entry.title ?? ""),
-      state: String(entry.state ?? "OPEN"),
-      author: String(entry.author?.login ?? ""),
-      labels: (entry.labels ?? []).map((label) => String(label?.name ?? "")),
-      assignees: (entry.assignees ?? []).map((user) => String(user?.login ?? "")),
-      url: String(entry.url ?? ""),
-      body: typeof entry.body === "string" ? entry.body : "",
-      updatedAt: String(entry.updatedAt ?? ""),
-    }));
+    .map((entry) => {
+      const checksSummary =
+        kind === "pr" && Array.isArray(entry.statusCheckRollup)
+          ? summarizeChecks(
+              normalizeStatusCheckRollup(
+                entry.statusCheckRollup as Parameters<
+                  typeof normalizeStatusCheckRollup
+                >[0],
+              ),
+            )
+          : null;
+      return {
+        repo,
+        number: entry.number,
+        kind,
+        title: String(entry.title ?? ""),
+        state: String(entry.state ?? "OPEN"),
+        author: String(entry.author?.login ?? ""),
+        labels: (entry.labels ?? []).map((label) => String(label?.name ?? "")),
+        assignees: (entry.assignees ?? []).map((user) =>
+          String(user?.login ?? ""),
+        ),
+        url: String(entry.url ?? ""),
+        body: typeof entry.body === "string" ? entry.body : "",
+        updatedAt: String(entry.updatedAt ?? ""),
+        checksSummary,
+      };
+    });
 }
 
 // Open items plus a page of recently-closed ones, so the Closed filter has
@@ -418,7 +465,9 @@ export async function fetchRepoItems(
   gh: GhRunner,
   repo: string,
 ): Promise<CachedItem[]> {
-  const fields = "number,title,state,author,labels,assignees,url,body,updatedAt";
+  const issueFields =
+    "number,title,state,author,labels,assignees,url,body,updatedAt";
+  const prFields = `${issueFields},statusCheckRollup`;
   // A repo with GitHub Issues disabled must not abort the whole sync —
   // PRs still exist and should be cached.
   const ghIssuesTolerant = (args: string[]) =>
@@ -429,19 +478,19 @@ export async function fetchRepoItems(
   const [openIssues, closedIssues, openPrs, closedPrs] = await Promise.all([
     ghIssuesTolerant([
       "issue", "list", "-R", repo, "--state", "open",
-      "--limit", String(ISSUE_PAGE), "--json", fields,
+      "--limit", String(ISSUE_PAGE), "--json", issueFields,
     ]),
     ghIssuesTolerant([
       "issue", "list", "-R", repo, "--state", "closed",
-      "--limit", String(CLOSED_ISSUE_PAGE), "--json", fields,
+      "--limit", String(CLOSED_ISSUE_PAGE), "--json", issueFields,
     ]),
     gh([
       "pr", "list", "-R", repo, "--state", "open",
-      "--limit", String(PR_PAGE), "--json", fields,
+      "--limit", String(PR_PAGE), "--json", prFields,
     ]),
     gh([
       "pr", "list", "-R", repo, "--state", "closed",
-      "--limit", String(CLOSED_PR_PAGE), "--json", fields,
+      "--limit", String(CLOSED_PR_PAGE), "--json", prFields,
     ]),
   ]);
   return [
@@ -572,6 +621,7 @@ export default async function plugin(bb: BbPluginApi) {
        PRIMARY KEY (repo, kind, number)
      )`,
     `ALTER TABLE items ADD COLUMN assignees TEXT NOT NULL DEFAULT '[]'`,
+    `ALTER TABLE items ADD COLUMN checks_summary TEXT`,
   ]);
 
   function parseStringArray(raw: unknown): string[] {
@@ -582,6 +632,31 @@ export default async function plugin(bb: BbPluginApi) {
       // tolerate a corrupt row rather than failing the whole list
     }
     return [];
+  }
+
+  function parseChecksSummary(raw: unknown): ChecksSummary | null {
+    if (raw === null || raw === undefined || raw === "") return null;
+    try {
+      const parsed = JSON.parse(String(raw)) as ChecksSummary;
+      if (
+        typeof parsed?.success === "number" &&
+        typeof parsed.failure === "number" &&
+        typeof parsed.pending === "number" &&
+        typeof parsed.neutral === "number" &&
+        Array.isArray(parsed.failingNames)
+      ) {
+        return {
+          success: parsed.success,
+          failure: parsed.failure,
+          pending: parsed.pending,
+          neutral: parsed.neutral,
+          failingNames: parsed.failingNames.map(String),
+        };
+      }
+    } catch {
+      // tolerate corrupt rows
+    }
+    return null;
   }
 
   function rowToItem(row: Record<string, unknown>): CachedItem {
@@ -597,6 +672,7 @@ export default async function plugin(bb: BbPluginApi) {
       url: String(row.url),
       body: String(row.body),
       updatedAt: String(row.updated_at),
+      checksSummary: parseChecksSummary(row.checks_summary),
     };
   }
 
@@ -654,8 +730,8 @@ export default async function plugin(bb: BbPluginApi) {
 
   function replaceRepoRows(repo: string, items: CachedItem[]): void {
     const insert = db.prepare(
-      `INSERT INTO items (repo, number, kind, title, state, author, labels, assignees, url, body, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO items (repo, number, kind, title, state, author, labels, assignees, url, body, updated_at, checks_summary)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     db.transaction(() => {
       db.prepare("DELETE FROM items WHERE repo = ?").run(repo);
@@ -664,6 +740,7 @@ export default async function plugin(bb: BbPluginApi) {
           item.repo, item.number, item.kind, item.title, item.state,
           item.author, JSON.stringify(item.labels), JSON.stringify(item.assignees),
           item.url, item.body, item.updatedAt,
+          item.checksSummary === null ? null : JSON.stringify(item.checksSummary),
         );
       }
     })();
@@ -1107,27 +1184,7 @@ export default async function plugin(bb: BbPluginApi) {
 
       // CheckRun rows carry status/conclusion; classic StatusContext rows a
       // single state. Normalize both to one traffic-light value.
-      const checks = (view.statusCheckRollup ?? []).map((entry) => {
-        const conclusion = String(entry.conclusion ?? entry.state ?? "").toUpperCase();
-        const running =
-          entry.conclusion === "" ||
-          ["IN_PROGRESS", "QUEUED", "PENDING", "EXPECTED", "WAITING"].includes(
-            String(entry.status ?? entry.state ?? "").toUpperCase(),
-          );
-        const status: "success" | "failure" | "pending" | "neutral" =
-          conclusion === "SUCCESS"
-            ? "success"
-            : conclusion === "FAILURE" || conclusion === "ERROR" || conclusion === "TIMED_OUT"
-              ? "failure"
-              : running
-                ? "pending"
-                : "neutral";
-        return {
-          name: String(entry.name ?? entry.context ?? "check"),
-          status,
-          url: String(entry.detailsUrl ?? entry.targetUrl ?? ""),
-        };
-      });
+      const checks = normalizeStatusCheckRollup(view.statusCheckRollup ?? []);
 
       interface GhReviewComment {
         id?: unknown;
@@ -1349,38 +1406,71 @@ export default async function plugin(bb: BbPluginApi) {
     try {
       const raw = await gh(
         kind === "pr"
-          ? ["pr", "view", String(number), "-R", repo, "--json", "number,title,body,state,author,url"]
-          : ["issue", "view", String(number), "-R", repo, "--json", "number,title,body,state,author,url"],
+          ? [
+              "pr",
+              "view",
+              String(number),
+              "-R",
+              repo,
+              "--json",
+              "number,title,body,state,author,url,statusCheckRollup",
+            ]
+          : [
+              "issue",
+              "view",
+              String(number),
+              "-R",
+              repo,
+              "--json",
+              "number,title,body,state,author,url",
+            ],
         15_000,
       );
       const detail = JSON.parse(raw) as GhListEntry;
-      return {
-        context: [
-          `# GitHub ${noun} ${repo}#${number}: ${String(detail.title ?? "")}`,
-          "",
-          `State: ${String(detail.state ?? "")} · Author: ${String(detail.author?.login ?? "")}`,
-          `URL: ${String(detail.url ?? "")}`,
-          "",
-          typeof detail.body === "string" && detail.body.length > 0
-            ? detail.body
-            : "(no description)",
-          "",
-          `For full comments/diff run: gh ${kind === "pr" ? "pr" : "issue"} view ${number} -R ${repo} --comments`,
-        ].join("\n"),
-      };
+      const lines = [
+        `# GitHub ${noun} ${repo}#${number}: ${String(detail.title ?? "")}`,
+        "",
+        `State: ${String(detail.state ?? "")} · Author: ${String(detail.author?.login ?? "")}`,
+        `URL: ${String(detail.url ?? "")}`,
+      ];
+      if (kind === "pr") {
+        const summary = summarizeChecks(
+          normalizeStatusCheckRollup(
+            Array.isArray(detail.statusCheckRollup)
+              ? (detail.statusCheckRollup as Parameters<
+                  typeof normalizeStatusCheckRollup
+                >[0])
+              : [],
+          ),
+        );
+        lines.push(formatChecksSummaryLine(summary));
+      }
+      lines.push(
+        "",
+        typeof detail.body === "string" && detail.body.length > 0
+          ? detail.body
+          : "(no description)",
+        "",
+        `For full comments/diff run: gh ${kind === "pr" ? "pr" : "issue"} view ${number} -R ${repo} --comments`,
+      );
+      return { context: lines.join("\n") };
     } catch (error) {
       const cached = getCachedItem(kind, repo, number);
       if (cached === null) throw error instanceof Error ? error : new Error(String(error));
-      return {
-        context: [
-          `# GitHub ${noun} ${repo}#${number}: ${cached.title}`,
-          "",
-          `State: ${cached.state} · Author: ${cached.author}`,
-          `URL: ${cached.url}`,
-          "",
-          cached.body.length > 0 ? cached.body : "(no description)",
-        ].join("\n"),
-      };
+      const lines = [
+        `# GitHub ${noun} ${repo}#${number}: ${cached.title}`,
+        "",
+        `State: ${cached.state} · Author: ${cached.author}`,
+        `URL: ${cached.url}`,
+      ];
+      if (kind === "pr" && cached.checksSummary !== null) {
+        lines.push(formatChecksSummaryLine(cached.checksSummary));
+      }
+      lines.push(
+        "",
+        cached.body.length > 0 ? cached.body : "(no description)",
+      );
+      return { context: lines.join("\n") };
     }
   }
 
@@ -1416,6 +1506,7 @@ export default async function plugin(bb: BbPluginApi) {
     "  bb github repos              List tracked repositories",
     "  bb github issues [repo]      List cached open issues",
     "  bb github prs [repo]         List cached open pull requests",
+    "  bb github checks [pr]        Show CI check rollup for a pull request",
     "  bb github sync               Refresh the cache from GitHub now",
   ].join("\n");
 
@@ -1426,6 +1517,11 @@ export default async function plugin(bb: BbPluginApi) {
       { name: "repos", summary: "List tracked repositories", usage: "bb github repos" },
       { name: "issues", summary: "List cached open issues", usage: "bb github issues [owner/repo]" },
       { name: "prs", summary: "List cached open pull requests", usage: "bb github prs [owner/repo]" },
+      {
+        name: "checks",
+        summary: "Show CI check rollup for a pull request",
+        usage: "bb github checks [owner/repo#number|number]",
+      },
       { name: "sync", summary: "Refresh the cache from GitHub now", usage: "bb github sync" },
     ],
     async run(argv) {
@@ -1462,9 +1558,109 @@ export default async function plugin(bb: BbPluginApi) {
           return {
             exitCode: 0,
             stdout: items
-              .map((item) => `${item.repo}#${item.number}\t[${item.state}]\t${item.title}`)
+              .map((item) => {
+                const ci =
+                  item.kind === "pr" && item.checksSummary !== null
+                    ? `\t${formatChecksSummaryLine(item.checksSummary)}`
+                    : "";
+                return `${item.repo}#${item.number}\t[${item.state}]\t${item.title}${ci}`;
+              })
               .join("\n"),
           };
+        }
+        if (sub === "checks") {
+          await checkAuth();
+          let repo: string | null = null;
+          let number: number | null = null;
+          if (arg === undefined) {
+            const openPrs = listCachedItems({ kind: "pr", state: "open" });
+            if (openPrs.length === 1) {
+              repo = openPrs[0]!.repo;
+              number = openPrs[0]!.number;
+            } else {
+              return {
+                exitCode: 1,
+                stderr:
+                  "Usage: bb github checks owner/repo#number (or pass a PR number when only one open PR is cached)\n",
+              };
+            }
+          } else if (arg.includes("#")) {
+            const [repoPart, numberPart] = arg.split("#");
+            repo = repoPart ?? null;
+            number = Number(numberPart);
+          } else if (/^\d+$/.test(arg)) {
+            number = Number(arg);
+            const matches = listCachedItems({ kind: "pr" }).filter(
+              (item) => item.number === number,
+            );
+            if (matches.length === 1) {
+              repo = matches[0]!.repo;
+            } else if (matches.length === 0) {
+              return {
+                exitCode: 1,
+                stderr: `No cached PR #${number}. Pass owner/repo#${number} or run bb github sync.\n`,
+              };
+            } else {
+              return {
+                exitCode: 1,
+                stderr: `Ambiguous PR #${number}; pass owner/repo#${number}.\n`,
+              };
+            }
+          } else if (isRepoName(arg)) {
+            const openPrs = listCachedItems({
+              kind: "pr",
+              repo: arg,
+              state: "open",
+            });
+            if (openPrs.length === 1) {
+              repo = openPrs[0]!.repo;
+              number = openPrs[0]!.number;
+            } else {
+              return {
+                exitCode: 1,
+                stderr: `Pass owner/repo#number for ${arg} (found ${openPrs.length} open PRs).\n`,
+              };
+            }
+          }
+          if (repo === null || number === null || !Number.isFinite(number)) {
+            return { exitCode: 1, stderr: `Invalid checks argument "${arg ?? ""}".\n` };
+          }
+          const raw = await gh(
+            [
+              "pr",
+              "view",
+              String(number),
+              "-R",
+              repo,
+              "--json",
+              "number,title,url,statusCheckRollup",
+            ],
+            30_000,
+          );
+          const view = JSON.parse(raw) as {
+            number?: unknown;
+            title?: unknown;
+            url?: unknown;
+            statusCheckRollup?: unknown;
+          };
+          const checks = normalizeStatusCheckRollup(
+            Array.isArray(view.statusCheckRollup)
+              ? (view.statusCheckRollup as Parameters<
+                  typeof normalizeStatusCheckRollup
+                >[0])
+              : [],
+          );
+          const summary = summarizeChecks(checks);
+          const lines = [
+            `${repo}#${String(view.number ?? number)} ${String(view.title ?? "")}`,
+            String(view.url ?? ""),
+            formatChecksSummaryLine(summary),
+            ...checks.map(
+              (check) =>
+                `  [${check.status}] ${check.name}${check.url ? ` ${check.url}` : ""}`,
+            ),
+          ];
+          return { exitCode: summary.failure > 0 ? 1 : 0, stdout: `${lines.join("\n")}\n` };
         }
         if (sub === "sync") {
           const { repos, items } = await syncAll(true);

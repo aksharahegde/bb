@@ -148,3 +148,15 @@ each renders its own card.
   remaining risk or blocker.
 - Prefer stable task keys such as `ABC-12` for task commands. Use `--json` for
   machine-readable output and human output for quick inspection.
+
+## Migrating Autonomous Backlog
+
+Legacy `.bb/tasks/tasks.json` files import into Tasks:
+
+```sh
+bb tasks import-backlog [--bb-project <proj_id>] [--json]
+```
+
+New tech-debt items should use `bb tasks create` (or the Autonomous Backlog
+`create_task` tool shim, which writes Tasks). Do not write new JSON backlog
+files.

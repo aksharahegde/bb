@@ -13,6 +13,7 @@ import {
 } from "../attachments";
 import { deliverCommentToLatestAgent } from "../steer";
 import { isSideChatShapedThread } from "../shared/side-chat";
+import { importAutonomousBacklogForBbProject } from "../import-autonomous-backlog";
 import {
   tasksRpcContract,
   type Attachment as AttachmentMetadata,
@@ -740,6 +741,15 @@ export function registerHandlers(
     },
     listProjects(input) {
       return { projects: store.tasks.listProjects(input.folderId) };
+    },
+    async importAutonomousBacklog(input) {
+      const result = await importAutonomousBacklogForBbProject({
+        bb,
+        store,
+        bbProjectId: input.bbProjectId,
+      });
+      publishProjectsChanged(bb, result.projectId);
+      return result;
     },
     createTask(input) {
       try {

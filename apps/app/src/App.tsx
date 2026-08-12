@@ -41,6 +41,7 @@ import {
   TOOLS_REGISTRY_SKILL_DETAIL_ROUTE_PATH,
   TOOLS_REGISTRY_SKILLS_ROUTE_PATH,
   TOOLS_ROUTE_PATH,
+  MISSION_CONTROL_ROUTE_PATH,
   TOOLS_SKILL_DETAIL_ROUTE_PATH,
   getAutomationDetailRoutePath,
   getAutomationEditRoutePath,
@@ -62,6 +63,11 @@ const SettingsView = lazy(() =>
 const ToolsView = lazy(() =>
   import("./views/ToolsView").then((m) => ({
     default: m.ToolsView,
+  })),
+);
+const MissionControlView = lazy(() =>
+  import("./views/mission-control/MissionControlView").then((m) => ({
+    default: m.MissionControlView,
   })),
 );
 const MachineSettingsView = lazy(() =>
@@ -202,6 +208,10 @@ function AppRoutes() {
           <Route
             path={LEGACY_AUTOMATION_DETAIL_ROUTE_PATH}
             element={<LegacyAutomationDetailRedirect />}
+          />
+          <Route
+            path={MISSION_CONTROL_ROUTE_PATH}
+            element={<MissionControlView />}
           />
           <Route element={<ToolsExperimentGate />}>
             <Route
