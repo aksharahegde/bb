@@ -165,6 +165,12 @@ interface ResolveThreadStoragePathArgs {
   threadId: string;
 }
 
+const providerThreadStopResultSchema = z
+  .object({
+    providerCheckpointId: z.string().min(1).nullable().optional(),
+  })
+  .passthrough();
+
 function defaultBridgeNodeEnv(): Record<string, string> | undefined {
   if (process.versions.electron === undefined) {
     return undefined;
@@ -1949,13 +1955,13 @@ function createAgentRuntimeInternal(
             }
             forgetThreadRuntimeState(proc, threadId);
             await shutdownThreadScopedCodexProcessIfIdle(proc);
-            return;
+            return { providerCheckpointId: null };
           }
 
-          await sendCommand({
+          const result = await sendCommand({
             proc,
             message: cmd,
-            resultSchema: ignoredJsonRpcResultSchema,
+            resultSchema: providerThreadStopResultSchema,
           });
           emitAcceptedCommandEvents({
             command: adapterCommand,
@@ -1964,6 +1970,9 @@ function createAgentRuntimeInternal(
           });
           forgetThreadRuntimeState(proc, threadId);
           await shutdownThreadScopedCodexProcessIfIdle(proc);
+          return {
+            providerCheckpointId: result.providerCheckpointId ?? null,
+          };
         },
       });
     },

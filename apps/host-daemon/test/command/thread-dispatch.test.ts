@@ -977,7 +977,7 @@ describe("thread command dispatch", () => {
     expect(renameResult).toEqual({});
     expect(archiveResult).toEqual({});
     expect(unarchiveResult).toEqual({});
-    expect(stopResult).toEqual({});
+    expect(stopResult).toEqual({ providerCheckpointId: null });
     expect(harness.runtimeState.startedThreadId).toBe("thread-1");
     expect(harness.runtimeState.startedInstructions).toBe(
       "Be a helpful coding agent.",
@@ -1044,7 +1044,7 @@ describe("thread command dispatch", () => {
       harness.dispatchOptions(),
     );
 
-    expect(stopResult).toEqual({});
+    expect(stopResult).toEqual({ providerCheckpointId: null });
     expect(harness.runtimeState.stoppedThreadId).toBe("thread-stop");
     expect(harness.runtime.hasThread("thread-stop")).toBe(false);
 
@@ -1059,7 +1059,7 @@ describe("thread command dispatch", () => {
         },
         harness.dispatchOptions(),
       ),
-    ).resolves.toEqual({});
+    ).resolves.toEqual({ providerCheckpointId: null });
     expect(harness.runtimeState.stoppedThreadId).toBeUndefined();
   });
 

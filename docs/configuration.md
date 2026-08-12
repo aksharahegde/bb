@@ -200,7 +200,7 @@ and ACP session MCP config. Codex and Pi ignore the registry in this release.
 - Prefer `--env-from-host KEY` / the Settings "env from host" field for secrets
   instead of storing tokens in the database.
 - MCP tools are untrusted: do not auto-escalate permissions for them.
-- Host daemons must be on protocol 107+ to receive the field; older daemons
+- Host daemons must be on protocol 108+ to receive the field; older daemons
   update automatically via the protocol version mismatch.
 
 | Area      | Command                       | Default                           | Availability             |
@@ -597,11 +597,12 @@ The `toolsHub` experiment exposes Extensions for managing skills and plugins,
 while Automations stays in the Plugins section beside threads. The `toolsHub`
 gate only controls the UI. Installed skills, automation execution, plugin
 runtimes, CLI commands, and backend APIs keep working while it is off.
-The `editMessages` experiment enables replacing an eligible, successfully
-completed root user message in an idle Codex, Claude Code, or Pi thread.
-Grouped multi-message requests are not yet editable. Opening the editor does
-not change history; submission atomically replaces that message and every later
-turn while keeping workspace changes.
+The `editMessages` experiment enables replacing an eligible, accepted root user
+message in a Codex, Claude Code, or Pi thread, including failed or incomplete
+turns. Grouped multi-message requests are not yet editable. Opening the editor
+does not change history; if the thread is running, submission stops the current
+turn and waits for it to settle before atomically replacing that message and
+every later turn while keeping workspace changes.
 
 ## Thread Timeline Window
 

@@ -252,6 +252,10 @@ export interface StopThreadArgs {
   threadId: string;
 }
 
+export interface StopThreadResult {
+  providerCheckpointId: string | null;
+}
+
 export interface AgentRuntimeProviderSession {
   providerId: string;
   providerThreadId: string;
@@ -327,7 +331,7 @@ export interface AgentRuntime {
    * reports `false` afterwards and the next turn must go through
    * `resumeThread`. The provider process keeps running for other threads.
    */
-  stopThread(args: StopThreadArgs): Promise<void>;
+  stopThread(args: StopThreadArgs): Promise<StopThreadResult>;
 
   clearThreadGoal(args: ClearThreadGoalArgs): Promise<{ cleared: boolean }>;
 
