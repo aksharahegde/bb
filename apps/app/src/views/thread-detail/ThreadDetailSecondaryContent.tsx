@@ -452,11 +452,13 @@ function ThreadDetailSecondaryContentBody({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Paint the light shell first. The real panel mounts two frames
                 later, while the compositor moves the drawer. */}
-            {isPanelRealized ? (
-              drawerSecondaryPanelContent
-            ) : (
-              <ThreadMetadataLoadingSkeleton />
-            )}
+            {isSecondaryPanelOpen || isPanelRealized ? (
+              isPanelRealized ? (
+                drawerSecondaryPanelContent
+              ) : (
+                <ThreadMetadataLoadingSkeleton />
+              )
+            ) : null}
           </div>
         </PersistentResponsiveDrawerShell>
       ) : null}
