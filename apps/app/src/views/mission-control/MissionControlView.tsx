@@ -10,7 +10,7 @@ import { Badge } from "@bb/shared-ui/badge";
 import { Button } from "@bb/shared-ui/button";
 import {
   getThreadListIndicatorLabel,
-  isBusyThread,
+  isRuntimeBusyThread,
   resolveThreadListIndicator,
 } from "@/lib/thread-activity";
 import {
@@ -73,7 +73,7 @@ function fleetBadges(thread: ThreadListEntry): string[] {
   const badges: string[] = [];
   if (thread.hasPendingInteraction) badges.push("pending input");
   if (thread.status === "error") badges.push("error");
-  if (isBusyThread(thread)) badges.push("busy");
+  if (isRuntimeBusyThread(thread)) badges.push("busy");
   if (thread.activity.activeWorkflowCount > 0) badges.push("workflow");
   if (thread.activity.activeBackgroundAgentCount > 0) {
     badges.push("bg agent");
@@ -205,7 +205,7 @@ export function MissionControlView() {
     const ids: string[] = [];
     for (const thread of threads) {
       if (!thread.environmentId) continue;
-      if (!isBusyThread(thread) && thread.status !== "error") continue;
+      if (!isRuntimeBusyThread(thread) && thread.status !== "error") continue;
       if (!ids.includes(thread.environmentId)) ids.push(thread.environmentId);
       if (ids.length >= 8) break;
     }
@@ -245,7 +245,7 @@ export function MissionControlView() {
     for (const thread of threads) {
       if (thread.hasPendingInteraction) pending += 1;
       if (thread.status === "error") failed += 1;
-      if (isBusyThread(thread)) busy += 1;
+      if (isRuntimeBusyThread(thread)) busy += 1;
     }
     return { total: threads.length, pending, busy, failed };
   }, [threads]);
@@ -256,7 +256,7 @@ export function MissionControlView() {
         let value = 0;
         if (thread.hasPendingInteraction) value += 100;
         if (thread.status === "error") value += 80;
-        if (isBusyThread(thread)) value += 40;
+        if (isRuntimeBusyThread(thread)) value += 40;
         if (thread.parentThreadId === null) value += 10;
         return value;
       };
@@ -380,7 +380,7 @@ export function MissionControlView() {
               thread.activity.activeBackgroundCommandCount > 0,
             isGoalActive: thread.activity.activeGoalCount > 0,
             isPlanModeActive: thread.activity.activePlanModeCount > 0,
-            isRuntimeActive: isBusyThread(thread),
+            isRuntimeActive: isRuntimeBusyThread(thread),
             isWorkflowActive: thread.activity.activeWorkflowCount > 0,
           });
           const indicatorLabel = getThreadListIndicatorLabel(indicator);
