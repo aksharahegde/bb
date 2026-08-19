@@ -54,6 +54,7 @@ import {
   transcribeCodexVoice,
 } from "./codex-chatgpt-client.js";
 import { discoverRepos } from "./command-handlers/discover-repos.js";
+import { scanUsageHistory } from "./command-handlers/usage-history-scan.js";
 import { getProviderUsage } from "./provider-usage.js";
 import {
   getKnownAcpAgentsStatus,
@@ -689,6 +690,12 @@ const onlineRpcHandlers: OnlineRpcHandlerMap = {
       sinceDays: command.sinceDays,
       limit: command.limit,
       env: options.runtimeManager.getShellEnv(),
+    }),
+  "usage.history.scan": async (command) =>
+    scanUsageHistory({
+      sinceDays: command.sinceDays,
+      limit: command.limit,
+      fileCursors: command.fileCursors,
     }),
   "workspace.status": async (command, options) => {
     const resolution = await resolveWorkspaceForCommand({

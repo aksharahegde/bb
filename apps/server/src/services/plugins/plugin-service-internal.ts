@@ -1,6 +1,10 @@
 import type { DbConnection } from "@bb/db";
 import type { DynamicTool, Thread } from "@bb/domain";
 import type { HostDaemonConnectTunnelIdentity } from "@bb/host-daemon-contract";
+import type {
+  HostDaemonOnlineRpcResultForCommand,
+  HostDaemonRetryableOnlineRpcCommand,
+} from "@bb/host-daemon-contract";
 import {
   pluginUpdateCheckEntrySchema,
   type InstalledPlugin,
@@ -18,6 +22,7 @@ import type {
   PluginBackgroundServiceRecord,
   PluginMentionTrigger,
 } from "./plugin-api.js";
+import type { CallHostRetryableOnlineRpcArgs } from "../hosts/online-rpc.js";
 import type { HostSharedPortCoordinator } from "../../ws/host-shared-ports.js";
 import type { ProviderRegistryService } from "../providers/provider-registry.js";
 import type { PluginHostArtifactRegistry } from "./plugin-host-artifact-registry.js";
@@ -92,14 +97,12 @@ export interface PluginServiceDeps {
   /** Omitted only by isolated plugin tests that exercise no provider surface;
    * `bb.agents.experimental_registerProvider` throws without it. */
   providerRegistry?: ProviderRegistryService;
-  /** Live provider-bridge artifacts, shared with the internal routes and
-   * thread commands. Omitted only by isolated plugin tests that exercise no
-   * provider surface. */
-  /**
-   * The shared live-host-artifact map. Omitted only by isolated plugin-runtime
-   * tests, which then get a private one.
-   */
+  /** The shared live-host-artifact map. Omitted only by isolated plugin-runtime
+   * tests, which then get a private one. */
   pluginHostArtifacts?: PluginHostArtifactRegistry;
+  callRetryableOnlineRpc?: <TCommand extends HostDaemonRetryableOnlineRpcCommand>(
+    args: CallHostRetryableOnlineRpcArgs<TCommand>,
+  ) => Promise<HostDaemonOnlineRpcResultForCommand<TCommand>>;
   /** Thread DTO assembly for lifecycle events + plugin-signal broadcast +
    * the `plugins-changed` system broadcast on lifecycle completion. */
   hub: Pick<

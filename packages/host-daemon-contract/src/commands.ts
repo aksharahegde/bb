@@ -1622,6 +1622,78 @@ export const discoverReposResultSchema = z
   .strict();
 export type DiscoverReposResult = z.infer<typeof discoverReposResultSchema>;
 
+export const usageHistoryProviderSchema = z.enum(["claude-code", "cursor"]);
+export type UsageHistoryProvider = z.infer<typeof usageHistoryProviderSchema>;
+
+export const usageHistorySourceSchema = z.enum([
+  "claude-jsonl",
+  "cursor-ide-composer",
+  "cursor-agent-acp",
+]);
+export type UsageHistorySource = z.infer<typeof usageHistorySourceSchema>;
+
+export const usageHistoryCostSourceSchema = z.enum([
+  "provider-reported",
+  "model-priced",
+  "unpriced",
+]);
+export type UsageHistoryCostSource = z.infer<
+  typeof usageHistoryCostSourceSchema
+>;
+
+export const usageHistoryEventSchema = z
+  .object({
+    /** Stable dedupe key for this host-local usage record. */
+    id: z.string().min(1),
+    provider: usageHistoryProviderSchema,
+    source: usageHistorySourceSchema,
+    model: z.string().min(1),
+    occurredAt: z.string().datetime(),
+    inputTokens: z.number().int().nonnegative(),
+    cachedInputTokens: z.number().int().nonnegative(),
+    cacheWriteTokens: z.number().int().nonnegative(),
+    outputTokens: z.number().int().nonnegative(),
+    reasoningOutputTokens: z.number().int().nonnegative(),
+    costSource: usageHistoryCostSourceSchema,
+    /** Integer micro-USD; null when cost is not known on the host. */
+    costUsdMicros: z.number().int().nonnegative().nullable(),
+  })
+  .strict();
+export type UsageHistoryEvent = z.infer<typeof usageHistoryEventSchema>;
+
+export const usageHistoryFileCursorSchema = z
+  .object({
+    path: z.string().min(1),
+    byteOffset: z.number().int().nonnegative(),
+    mtimeMs: z.number().int().nonnegative(),
+  })
+  .strict();
+export type UsageHistoryFileCursor = z.infer<typeof usageHistoryFileCursorSchema>;
+
+export const usageHistoryScanResultSchema = z
+  .object({
+    events: z.array(usageHistoryEventSchema),
+    fileCursors: z.array(usageHistoryFileCursorSchema),
+    /** True when the scan hit its time or event budget and results may be partial. */
+    truncated: z.boolean(),
+    scannedAt: z.string().datetime(),
+  })
+  .strict();
+export type UsageHistoryScanResult = z.infer<typeof usageHistoryScanResultSchema>;
+
+const usageHistoryScanCommandSchema = z
+  .object({
+    type: z.literal("usage.history.scan"),
+    /**
+     * Only include events at or after this many days ago. Null scans all
+     * retained history.
+     */
+    sinceDays: z.number().int().min(1).max(36_500).nullable(),
+    limit: z.number().int().min(1).max(10_000),
+    fileCursors: z.array(usageHistoryFileCursorSchema),
+  })
+  .strict();
+
 const discoverReposCommandSchema = z
   .object({
     type: z.literal("workspace.discover_repos"),
@@ -2137,6 +2209,15 @@ export const hostDaemonCommandRegistry = {
     type: "workspace.discover_repos",
     schema: discoverReposCommandSchema,
     resultSchema: discoverReposResultSchema,
+    transport: "onlineRpc",
+    retryable: true,
+    flushEventsBeforeResult: false,
+    envLane: null,
+  }),
+  "usage.history.scan": defineHostDaemonCommandDescriptor({
+    type: "usage.history.scan",
+    schema: usageHistoryScanCommandSchema,
+    resultSchema: usageHistoryScanResultSchema,
     transport: "onlineRpc",
     retryable: true,
     flushEventsBeforeResult: false,

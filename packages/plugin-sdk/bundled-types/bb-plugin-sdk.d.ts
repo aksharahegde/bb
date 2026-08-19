@@ -281,6 +281,23 @@ declare const hostSchema: z$1.ZodObject<{
 }, z$1.core.$strip>;
 type Host = z$1.infer<typeof hostSchema>;
 
+declare const mcpRegistrySchema: z$1.ZodArray<z$1.ZodObject<{
+    args: z$1.ZodArray<z$1.ZodString>;
+    command: z$1.ZodOptional<z$1.ZodString>;
+    enabled: z$1.ZodBoolean;
+    env: z$1.ZodRecord<z$1.ZodString, z$1.ZodString>;
+    envFromHost: z$1.ZodArray<z$1.ZodString>;
+    id: z$1.ZodString;
+    name: z$1.ZodString;
+    transport: z$1.ZodEnum<{
+        http: "http";
+        sse: "sse";
+        stdio: "stdio";
+    }>;
+    url: z$1.ZodOptional<z$1.ZodString>;
+}, z$1.core.$strict>>;
+type McpRegistry = z$1.infer<typeof mcpRegistrySchema>;
+
 declare const pendingInteractionResolutionSchema: z$1.ZodUnion<readonly [z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
     decision: z$1.ZodLiteral<"allow_once">;
     grantedPermissions: z$1.ZodNullable<z$1.ZodObject<{
@@ -2610,8 +2627,8 @@ declare const projectResponseSchema: z$1.ZodObject<{
     gitRemoteUrl: z$1.ZodNullable<z$1.ZodString>;
     id: z$1.ZodString;
     kind: z$1.ZodEnum<{
-        standard: "standard";
         personal: "personal";
+        standard: "standard";
     }>;
     name: z$1.ZodString;
     sources: z$1.ZodArray<z$1.ZodObject<{
@@ -2655,8 +2672,8 @@ declare const projectWithThreadsResponseSchema: z$1.ZodObject<{
     gitRemoteUrl: z$1.ZodNullable<z$1.ZodString>;
     id: z$1.ZodString;
     kind: z$1.ZodEnum<{
-        standard: "standard";
         personal: "personal";
+        standard: "standard";
     }>;
     name: z$1.ZodString;
     sources: z$1.ZodArray<z$1.ZodObject<{
@@ -2916,24 +2933,24 @@ declare const environmentDiffFileQuerySchema: z$1.ZodDiscriminatedUnion<[z$1.Zod
     mergeBaseRef: z$1.ZodString;
     path: z$1.ZodString;
     side: z$1.ZodEnum<{
-        old: "old";
         new: "new";
+        old: "old";
     }>;
     target: z$1.ZodLiteral<"branch_committed">;
 }, z$1.core.$strip>, z$1.ZodObject<{
     mergeBaseRef: z$1.ZodString;
     path: z$1.ZodString;
     side: z$1.ZodEnum<{
-        old: "old";
         new: "new";
+        old: "old";
     }>;
     target: z$1.ZodLiteral<"all">;
 }, z$1.core.$strip>, z$1.ZodObject<{
     path: z$1.ZodString;
     sha: z$1.ZodString;
     side: z$1.ZodEnum<{
-        old: "old";
         new: "new";
+        old: "old";
     }>;
     target: z$1.ZodLiteral<"commit">;
 }, z$1.core.$strip>], "target">;
@@ -3577,6 +3594,19 @@ declare const hostDaemonCommandRegistry: {
             name: z$1.ZodString;
         }, z$1.core.$strip>>;
         environmentId: z$1.ZodString;
+        externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
+            args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            command: z$1.ZodOptional<z$1.ZodString>;
+            env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
+            envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            name: z$1.ZodString;
+            transport: z$1.ZodEnum<{
+                http: "http";
+                sse: "sse";
+                stdio: "stdio";
+            }>;
+            url: z$1.ZodOptional<z$1.ZodString>;
+        }, z$1.core.$strict>>;
         injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
             description: z$1.ZodString;
             entryPath: z$1.ZodString;
@@ -3804,22 +3834,22 @@ declare const hostDaemonCommandRegistry: {
             name: z$1.ZodString;
         }, z$1.core.$strip>>;
         environmentId: z$1.ZodString;
+        externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
+            args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            command: z$1.ZodOptional<z$1.ZodString>;
+            env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
+            envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            name: z$1.ZodString;
+            transport: z$1.ZodEnum<{
+                http: "http";
+                sse: "sse";
+                stdio: "stdio";
+            }>;
+            url: z$1.ZodOptional<z$1.ZodString>;
+        }, z$1.core.$strict>>;
         fork: z$1.ZodOptional<z$1.ZodObject<{
             sourceProviderThreadId: z$1.ZodString;
         }, z$1.core.$strip>>;
-        externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
-            name: z$1.ZodString;
-            transport: z$1.ZodEnum<{
-                stdio: "stdio";
-                http: "http";
-                sse: "sse";
-            }>;
-            command: z$1.ZodOptional<z$1.ZodString>;
-            args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
-            url: z$1.ZodOptional<z$1.ZodString>;
-            env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
-            envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
-        }, z$1.core.$strict>>;
         injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
             description: z$1.ZodString;
             entryPath: z$1.ZodString;
@@ -4541,17 +4571,17 @@ declare const hostDaemonCommandRegistry: {
                 name: z$1.ZodString;
             }, z$1.core.$strip>>;
             externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
-                name: z$1.ZodString;
-                transport: z$1.ZodEnum<{
-                    stdio: "stdio";
-                    http: "http";
-                    sse: "sse";
-                }>;
-                command: z$1.ZodOptional<z$1.ZodString>;
                 args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
-                url: z$1.ZodOptional<z$1.ZodString>;
+                command: z$1.ZodOptional<z$1.ZodString>;
                 env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
                 envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+                name: z$1.ZodString;
+                transport: z$1.ZodEnum<{
+                    http: "http";
+                    sse: "sse";
+                    stdio: "stdio";
+                }>;
+                url: z$1.ZodOptional<z$1.ZodString>;
             }, z$1.core.$strict>>;
             injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
                 description: z$1.ZodString;
@@ -4926,17 +4956,17 @@ declare const hostDaemonCommandRegistry: {
                 name: z$1.ZodString;
             }, z$1.core.$strip>>;
             externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
-                name: z$1.ZodString;
-                transport: z$1.ZodEnum<{
-                    stdio: "stdio";
-                    http: "http";
-                    sse: "sse";
-                }>;
-                command: z$1.ZodOptional<z$1.ZodString>;
                 args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
-                url: z$1.ZodOptional<z$1.ZodString>;
+                command: z$1.ZodOptional<z$1.ZodString>;
                 env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
                 envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+                name: z$1.ZodString;
+                transport: z$1.ZodEnum<{
+                    http: "http";
+                    sse: "sse";
+                    stdio: "stdio";
+                }>;
+                url: z$1.ZodOptional<z$1.ZodString>;
             }, z$1.core.$strict>>;
             injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
                 description: z$1.ZodString;
@@ -5969,6 +5999,49 @@ declare const hostDaemonCommandRegistry: {
         }, z$1.core.$strict>>;
         truncated: z$1.ZodBoolean;
     }, z$1.core.$strict>, "onlineRpc", true>;
+    "usage.history.scan": HostDaemonCommandDescriptor<"usage.history.scan", z$1.ZodObject<{
+        fileCursors: z$1.ZodArray<z$1.ZodObject<{
+            byteOffset: z$1.ZodNumber;
+            mtimeMs: z$1.ZodNumber;
+            path: z$1.ZodString;
+        }, z$1.core.$strict>>;
+        limit: z$1.ZodNumber;
+        sinceDays: z$1.ZodNullable<z$1.ZodNumber>;
+        type: z$1.ZodLiteral<"usage.history.scan">;
+    }, z$1.core.$strict>, z$1.ZodObject<{
+        events: z$1.ZodArray<z$1.ZodObject<{
+            cacheWriteTokens: z$1.ZodNumber;
+            cachedInputTokens: z$1.ZodNumber;
+            costSource: z$1.ZodEnum<{
+                "model-priced": "model-priced";
+                "provider-reported": "provider-reported";
+                unpriced: "unpriced";
+            }>;
+            costUsdMicros: z$1.ZodNullable<z$1.ZodNumber>;
+            id: z$1.ZodString;
+            inputTokens: z$1.ZodNumber;
+            model: z$1.ZodString;
+            occurredAt: z$1.ZodString;
+            outputTokens: z$1.ZodNumber;
+            provider: z$1.ZodEnum<{
+                "claude-code": "claude-code";
+                cursor: "cursor";
+            }>;
+            reasoningOutputTokens: z$1.ZodNumber;
+            source: z$1.ZodEnum<{
+                "claude-jsonl": "claude-jsonl";
+                "cursor-agent-acp": "cursor-agent-acp";
+                "cursor-ide-composer": "cursor-ide-composer";
+            }>;
+        }, z$1.core.$strict>>;
+        fileCursors: z$1.ZodArray<z$1.ZodObject<{
+            byteOffset: z$1.ZodNumber;
+            mtimeMs: z$1.ZodNumber;
+            path: z$1.ZodString;
+        }, z$1.core.$strict>>;
+        scannedAt: z$1.ZodString;
+        truncated: z$1.ZodBoolean;
+    }, z$1.core.$strict>, "onlineRpc", true>;
     "provider_cli.status": HostDaemonCommandDescriptor<"provider_cli.status", z$1.ZodObject<{
         type: z$1.ZodLiteral<"provider_cli.status">;
     }, z$1.core.$strict>, z$1.ZodRecord<z$1.ZodEnum<{
@@ -6418,13 +6491,23 @@ type AnyHostDaemonCommandDescriptor = HostDaemonCommandRegistry[keyof HostDaemon
 type HostDaemonCommandDescriptorForTransport<Transport extends HostDaemonCommandTransport> = Extract<AnyHostDaemonCommandDescriptor, {
     transport: Transport;
 }>;
+type HostDaemonRetryableOnlineRpcCommandDescriptor = Extract<HostDaemonCommandDescriptorForTransport<"onlineRpc">, {
+    retryable: true;
+}>;
+type HostDaemonSchemaForTransport<Transport extends HostDaemonCommandTransport> = HostDaemonCommandDescriptorForTransport<Transport>["schema"];
+type HostDaemonRetryableOnlineRpcCommandSchema = HostDaemonRetryableOnlineRpcCommandDescriptor["schema"];
 type HostDaemonResultSchemaMapForTransport<Transport extends HostDaemonCommandTransport> = {
     [Descriptor in HostDaemonCommandDescriptorForTransport<Transport> as Descriptor["type"]]: Descriptor["resultSchema"];
 };
 type HostDaemonOnlineRpcResultSchemaMap = HostDaemonResultSchemaMapForTransport<"onlineRpc">;
+type HostDaemonOnlineRpcCommand = z$1.infer<HostDaemonSchemaForTransport<"onlineRpc">>;
+type HostDaemonRetryableOnlineRpcCommand = z$1.infer<HostDaemonRetryableOnlineRpcCommandSchema>;
 type HostDaemonOnlineRpcResultByType = {
     [K in keyof HostDaemonOnlineRpcResultSchemaMap]: z$1.infer<HostDaemonOnlineRpcResultSchemaMap[K]>;
 };
+type HostDaemonOnlineRpcResultForCommand<TCommand extends HostDaemonOnlineRpcCommand = HostDaemonOnlineRpcCommand> = TCommand extends {
+    type: infer TType;
+} ? TType extends keyof HostDaemonOnlineRpcResultByType ? HostDaemonOnlineRpcResultByType[TType] : never : never;
 
 declare const pickFolderResponseSchema: z$1.ZodObject<{
     path: z$1.ZodNullable<z$1.ZodString>;
@@ -7689,6 +7772,21 @@ declare const systemConfigResponseSchema: z$1.ZodObject<{
                 webSurface: "webSurface";
             }>>;
         }, z$1.core.$strict>;
+    }, z$1.core.$strict>>;
+    mcpServers: z$1.ZodArray<z$1.ZodObject<{
+        args: z$1.ZodArray<z$1.ZodString>;
+        command: z$1.ZodOptional<z$1.ZodString>;
+        enabled: z$1.ZodBoolean;
+        env: z$1.ZodRecord<z$1.ZodString, z$1.ZodString>;
+        envFromHost: z$1.ZodArray<z$1.ZodString>;
+        id: z$1.ZodString;
+        name: z$1.ZodString;
+        transport: z$1.ZodEnum<{
+            http: "http";
+            sse: "sse";
+            stdio: "stdio";
+        }>;
+        url: z$1.ZodOptional<z$1.ZodString>;
     }, z$1.core.$strict>>;
     pluginThemes: z$1.ZodArray<z$1.ZodObject<{
         description: z$1.ZodNullable<z$1.ZodString>;
@@ -11188,6 +11286,8 @@ interface PluginSettingsSectionRegistration {
     description?: string;
     component: ComponentType<PluginSettingsSectionProps>;
 }
+/** Where a `navPanel` row renders in the app sidebar. */
+type PluginNavPanelSidebarPlacement = "default" | "primary";
 interface PluginNavPanelRegistration {
     /** Unique within the plugin; letters, digits, `-`, `_`. */
     id: string;
@@ -11234,6 +11334,12 @@ interface PluginNavPanelRegistration {
      * throwing headerContent is hidden without breaking the title bar.
      */
     headerContent?: ComponentType<PluginNavPanelProps>;
+    /**
+     * Sidebar row placement. `primary` renders directly below New thread in the
+     * primary-actions block; `default` (the default) renders with the other
+     * plugin nav rows.
+     */
+    sidebarPlacement?: PluginNavPanelSidebarPlacement;
 }
 /**
  * What a plugin action passes when it asks the host to open one of its panel
@@ -14434,6 +14540,16 @@ interface PluginHosts {
      * accepted here: it is owned by the daemon's trusted enrollment.
      */
     declareSharedPorts(hostId: string, ports: readonly number[]): void;
+    /**
+     * Invoke a retryable host-daemon RPC on a connected machine. The server
+     * validates enrollment and routes the command; plugins cannot influence
+     * tunnel identity or daemon credentials.
+     */
+    experimental_callRetryableOnlineRpc<TCommand extends HostDaemonRetryableOnlineRpcCommand>(args: {
+        hostId: string;
+        command: TCommand;
+        timeoutMs: number;
+    }): Promise<HostDaemonOnlineRpcResultForCommand<TCommand>>;
 }
 interface PluginStatusApi {
     /**
@@ -14499,4 +14615,4 @@ interface BbPluginApi {
 }
 
 export { PLUGIN_CLI_OUTPUT_MAX_BYTES, defineRpcContract, experimental_defineHostEntry };
-export type { BbContext, BbNavigate, BbPluginApi, ComposerCustomization, ComposerPlusMenuItem, ComposerRichTextSpec, ComposerStructuredDraft, ComposerView, ExperimentalHostCallOptions, ExperimentalHostClient, ExperimentalHostEntry, ExperimentalHostPaths, ExperimentalHostRpcContext, ExperimentalHostRpcHandlers, ExperimentalHostSignalContract, ExperimentalHostSignalEvent, ExperimentalHostSignals, ExperimentalHostWatchChange, ExperimentalHostWatchChangeType, ExperimentalHostWatchEvent, ExperimentalHostWatchListener, ExperimentalHostWatchOptions, ExperimentalHostWatchSubscription, ExperimentalHostWorkerLease, JsonValue, MarkdownProps, NewThreadComposerProps, NewThreadRequest, PluginAgentConfiguration, PluginAgentConfigurationContext, PluginAgentToolContentPart, PluginAgentToolContext, PluginAgentToolExperimentalStatusLabels, PluginAgentToolRegistrationBase, PluginAgentToolResult, PluginAgentToolSelection, PluginAgents, PluginAppBuilder, PluginAppComposer, PluginAppContentScripts, PluginAppDefinition, PluginAppSetup, PluginAppSlots, PluginBackground, PluginCli, PluginCliCommandInfo, PluginCliContext, PluginCliExecutionResult, PluginCliOutputLimitError, PluginCliRegistration, PluginCliResult, PluginComposerApi, PluginComposerMention, PluginComposerScope, PluginComposerTextEffect, PluginComposerThreadRowStatus, PluginContentScriptContext, PluginContentScriptDisposer, PluginContentScriptRegistration, PluginEvents, PluginFileOpenerProps, PluginFileOpenerRegistration, PluginFileOpenerSource, PluginHomepageSectionProps, PluginHomepageSectionRegistration, PluginHosts, PluginHttp, PluginHttpAuthMode, PluginHttpHandler, PluginInteractionCancelReason, PluginInteractionRequest, PluginInteractionResult, PluginKvStorage, PluginLogger, PluginMentionItem, PluginMentionProviderRegistration, PluginMentionSearchContext, PluginMentionTrigger, PluginMessageActionContext, PluginMessageActionRegistration, PluginMessageDirectiveMessage, PluginMessageDirectiveOpenWorkspaceFile, PluginMessageDirectiveProps, PluginMessageDirectiveRegistration, PluginNavPanelProps, PluginNavPanelRegistration, PluginNewThreadPanelActionContext, PluginNewThreadPanelActionRegistration, PluginNewThreadPanelProps, PluginPanelActionOpenOptions, PluginPendingInteractionProps, PluginPendingInteractionRegistration, PluginPendingInteractionView, PluginProviderCapabilities, PluginProviderComposerAction, PluginProviderDeclaration, PluginProviderIconRegistration, PluginProviderPermissionMode, PluginProviderReasoningLevel, PluginRealtime, PluginRealtimeConnectionState, PluginRpc, PluginRpcCallArgs, PluginRpcClient, PluginRpcContract, PluginRpcError, PluginRpcErrorCode, PluginRpcHandlers, PluginRpcIssuePathSegment, PluginRpcMethodContract, PluginRpcResult, PluginRpcValidationIssue, PluginSdkApp, PluginServerApi, PluginSettingDescriptor, PluginSettingDescriptors, PluginSettingValue, PluginSettings, PluginSettingsHandle, PluginSettingsSectionProps, PluginSettingsSectionRegistration, PluginSettingsState, PluginSettingsValues, PluginSharedPortTunnelIdentity, PluginSidebarFooterActionContext, PluginSidebarFooterActionProps, PluginSidebarFooterActionRegistration, PluginSidebarProject, PluginSidebarPullRequest, PluginSidebarSplitPane, PluginSidebarThread, PluginSidebarThreadActions, PluginSidebarThreadActivity, PluginSidebarThreadIndicator, PluginSidebarThreadPullRequestState, PluginSidebarThreadSplit, PluginSidebarThreadsState, PluginSidebarWorkspaceKind, PluginStatusApi, PluginStorage, PluginTargetedPanelActionOpenOptions, PluginThreadEventHandler, PluginThreadEventName, PluginThreadEventPayloads, PluginThreadHeaderActionProps, PluginThreadHeaderActionRegistration, PluginThreadListProps, PluginThreadListRegistration, PluginThreadPanelActionContext, PluginThreadPanelActionRegistration, PluginThreadPanelProps, PluginUi, StandardSchemaV1, StandardSchemaV1InferInput, StandardSchemaV1InferOutput, StandardSchemaV1Issue, StandardSchemaV1Result, ThreadChatMessageAction, ThreadChatMessageReference, ThreadChatProps };
+export type { BbContext, BbNavigate, BbPluginApi, ComposerCustomization, ComposerPlusMenuItem, ComposerRichTextSpec, ComposerStructuredDraft, ComposerView, ExperimentalHostCallOptions, ExperimentalHostClient, ExperimentalHostEntry, ExperimentalHostPaths, ExperimentalHostRpcContext, ExperimentalHostRpcHandlers, ExperimentalHostSignalContract, ExperimentalHostSignalEvent, ExperimentalHostSignals, ExperimentalHostWatchChange, ExperimentalHostWatchChangeType, ExperimentalHostWatchEvent, ExperimentalHostWatchListener, ExperimentalHostWatchOptions, ExperimentalHostWatchSubscription, ExperimentalHostWorkerLease, JsonValue, MarkdownProps, NewThreadComposerProps, NewThreadRequest, PluginAgentConfiguration, PluginAgentConfigurationContext, PluginAgentToolContentPart, PluginAgentToolContext, PluginAgentToolExperimentalStatusLabels, PluginAgentToolRegistrationBase, PluginAgentToolResult, PluginAgentToolSelection, PluginAgents, PluginAppBuilder, PluginAppComposer, PluginAppContentScripts, PluginAppDefinition, PluginAppSetup, PluginAppSlots, PluginBackground, PluginCli, PluginCliCommandInfo, PluginCliContext, PluginCliExecutionResult, PluginCliOutputLimitError, PluginCliRegistration, PluginCliResult, PluginComposerApi, PluginComposerMention, PluginComposerScope, PluginComposerTextEffect, PluginComposerThreadRowStatus, PluginContentScriptContext, PluginContentScriptDisposer, PluginContentScriptRegistration, PluginEvents, PluginFileOpenerProps, PluginFileOpenerRegistration, PluginFileOpenerSource, PluginHomepageSectionProps, PluginHomepageSectionRegistration, PluginHosts, PluginHttp, PluginHttpAuthMode, PluginHttpHandler, PluginInteractionCancelReason, PluginInteractionRequest, PluginInteractionResult, PluginKvStorage, PluginLogger, PluginMentionItem, PluginMentionProviderRegistration, PluginMentionSearchContext, PluginMentionTrigger, PluginMessageActionContext, PluginMessageActionRegistration, PluginMessageDirectiveMessage, PluginMessageDirectiveOpenWorkspaceFile, PluginMessageDirectiveProps, PluginMessageDirectiveRegistration, PluginNavPanelProps, PluginNavPanelRegistration, PluginNavPanelSidebarPlacement, PluginNewThreadPanelActionContext, PluginNewThreadPanelActionRegistration, PluginNewThreadPanelProps, PluginPanelActionOpenOptions, PluginPendingInteractionProps, PluginPendingInteractionRegistration, PluginPendingInteractionView, PluginProviderCapabilities, PluginProviderComposerAction, PluginProviderDeclaration, PluginProviderIconRegistration, PluginProviderPermissionMode, PluginProviderReasoningLevel, PluginRealtime, PluginRealtimeConnectionState, PluginRpc, PluginRpcCallArgs, PluginRpcClient, PluginRpcContract, PluginRpcError, PluginRpcErrorCode, PluginRpcHandlers, PluginRpcIssuePathSegment, PluginRpcMethodContract, PluginRpcResult, PluginRpcValidationIssue, PluginSdkApp, PluginServerApi, PluginSettingDescriptor, PluginSettingDescriptors, PluginSettingValue, PluginSettings, PluginSettingsHandle, PluginSettingsSectionProps, PluginSettingsSectionRegistration, PluginSettingsState, PluginSettingsValues, PluginSharedPortTunnelIdentity, PluginSidebarFooterActionContext, PluginSidebarFooterActionProps, PluginSidebarFooterActionRegistration, PluginSidebarProject, PluginSidebarPullRequest, PluginSidebarSplitPane, PluginSidebarThread, PluginSidebarThreadActions, PluginSidebarThreadActivity, PluginSidebarThreadIndicator, PluginSidebarThreadPullRequestState, PluginSidebarThreadSplit, PluginSidebarThreadsState, PluginSidebarWorkspaceKind, PluginStatusApi, PluginStorage, PluginTargetedPanelActionOpenOptions, PluginThreadEventHandler, PluginThreadEventName, PluginThreadEventPayloads, PluginThreadHeaderActionProps, PluginThreadHeaderActionRegistration, PluginThreadListProps, PluginThreadListRegistration, PluginThreadPanelActionContext, PluginThreadPanelActionRegistration, PluginThreadPanelProps, PluginUi, StandardSchemaV1, StandardSchemaV1InferInput, StandardSchemaV1InferOutput, StandardSchemaV1Issue, StandardSchemaV1Result, ThreadChatMessageAction, ThreadChatMessageReference, ThreadChatProps };

@@ -96,6 +96,9 @@
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "node scripts/build-bundled-dts.mjs --check && tsc --noEmit"
   },
+  "dependencies": {
+    "@bb/host-daemon-contract": "workspace:*"
+  },
   "devDependencies": {
     "@bb/domain": "workspace:*",
     "@bb/host-daemon-contract": "workspace:*",

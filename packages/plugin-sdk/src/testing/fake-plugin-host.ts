@@ -6,6 +6,10 @@ import { CronExpressionParser } from "cron-parser";
 import { Hono } from "hono";
 import { z } from "zod";
 import { PLUGIN_INTERACTION_MAX_TITLE_LENGTH } from "@bb/domain/plugin-interaction-limits";
+import type {
+  HostDaemonOnlineRpcResultForCommand,
+  HostDaemonRetryableOnlineRpcCommand,
+} from "@bb/host-daemon-contract";
 import {
   AGENT_TOOL_NAME_PATTERN,
   assertNoRecursiveJsonSchemaReferences,
@@ -394,6 +398,14 @@ export interface CreateFakePluginHostOptions {
   experimental_callHostRpc?: (
     call: ExperimentalFakeHostRpcCall,
   ) => unknown | Promise<unknown>;
+  /** Handler for bb.hosts.experimental_callRetryableOnlineRpc. */
+  callRetryableOnlineRpc?: <TCommand extends HostDaemonRetryableOnlineRpcCommand>(
+    args: {
+      hostId: string;
+      command: TCommand;
+      timeoutMs: number;
+    },
+  ) => Promise<HostDaemonOnlineRpcResultForCommand<TCommand>>;
 }
 
 export interface FakePluginHost {
@@ -1695,6 +1707,14 @@ function createFakePluginHostInternal(
       } else {
         sharedPortDeclarations[existingIndex] = replacement;
       }
+    },
+    async experimental_callRetryableOnlineRpc(args) {
+      assertLive();
+      const handler = options.callRetryableOnlineRpc;
+      if (!handler) {
+        throw new Error("host online RPC is unavailable");
+      }
+      return handler(args);
     },
   };
   disposeHooks.push(() => {

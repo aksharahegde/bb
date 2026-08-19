@@ -198,6 +198,7 @@ describe("builtin plugin reconciliation", () => {
       "decisions",
       "autonomous-backlog",
       "summary-hub",
+      "usage-analytics",
       "agent-roster",
     ]);
     for (const name of optionalNames) {

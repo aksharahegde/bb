@@ -455,6 +455,33 @@ const ONLINE_RPC_RESPONSE_RESULT_FIXTURES: OnlineRpcResponseResultFixtures = {
     ],
     truncated: false,
   },
+  "usage.history.scan": {
+    events: [
+      {
+        id: "claude-code:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa:msg_0001",
+        provider: "claude-code",
+        source: "claude-jsonl",
+        model: "claude-sonnet-5",
+        occurredAt: "2026-08-01T10:00:05.000Z",
+        inputTokens: 1200,
+        cachedInputTokens: 800,
+        cacheWriteTokens: 400,
+        outputTokens: 80,
+        reasoningOutputTokens: 0,
+        costSource: "unpriced",
+        costUsdMicros: null,
+      },
+    ],
+    fileCursors: [
+      {
+        path: "/home/user/.claude/projects/-tmp-example/session.jsonl",
+        byteOffset: 2048,
+        mtimeMs: 1_786_176_000_000,
+      },
+    ],
+    truncated: false,
+    scannedAt: "2026-08-10T12:00:00.000Z",
+  },
   "workspace.status": WORKSPACE_UNAVAILABLE_RESULT,
   "workspace.diff": WORKSPACE_UNAVAILABLE_RESULT,
   "workspace.diffFiles": WORKSPACE_UNAVAILABLE_RESULT,
@@ -1077,6 +1104,8 @@ const BRIDGE_LAUNCH = {
 } as const;
 
 describe("host-daemon command schemas", () => {
+  // Version 136 adds usage.history.scan for read-only local Claude Code and
+  // Cursor history ingestion. Older daemons cannot serve analytics refresh.
   // Version 130 makes every provider plugin-declared on the wire: a REQUIRED
   // `bridgeLaunch` field beside every `acpLaunchSpec` site (thread.start, the
   // resume contexts, thread.goal.clear, thread.archive, thread.unarchive,
@@ -1142,7 +1171,7 @@ describe("host-daemon command schemas", () => {
   // mixed version. Version 113 carried the Devin Desktop open target rename
   // and remains part of the protocol lineage.
   it("uses the current host-daemon protocol version", () => {
-    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(135);
+    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(136);
     expect(HOST_ARTIFACT_MAX_BYTES).toBe(256 * 1024 * 1024);
   });
 
@@ -2417,6 +2446,7 @@ describe("host-daemon command schemas", () => {
       },
       instructions: "Be a helpful thread.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "append",
     };
@@ -2441,6 +2471,7 @@ describe("host-daemon command schemas", () => {
         bridgeLaunch,
         instructions: "Be a helpful thread.",
         dynamicTools: [],
+        externalMcpServers: [],
         injectedSkillSources: [],
         instructionMode: "append",
       },

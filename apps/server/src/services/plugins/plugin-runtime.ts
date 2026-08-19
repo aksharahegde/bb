@@ -1465,6 +1465,12 @@ export function createPluginRuntime(context: PluginRuntimeContext) {
         const existing = deps.providerRegistry.get(providerId);
         return existing !== null && existing.source.pluginId !== row.id;
       },
+      callRetryableOnlineRpc: (args) => {
+        if (!deps.callRetryableOnlineRpc) {
+          throw new Error("host online RPC is unavailable");
+        }
+        return deps.callRetryableOnlineRpc(args);
+      },
     });
     // Mutable trees are edited between loads, so invalidate the previous
     // generation's URLs before importing (managed git:/npm: artifacts are

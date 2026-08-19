@@ -184,6 +184,12 @@ export const OFFICIAL_PLUGINS = [
     category: "Context & knowledge",
   },
   {
+    name: "usage-analytics",
+    pluginId: "usage-analytics",
+    defaultEnabled: true,
+    category: "Context & knowledge",
+  },
+  {
     name: "agent-roster",
     pluginId: "agent-roster",
     defaultEnabled: true,

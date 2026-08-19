@@ -35,6 +35,7 @@ export async function resolveEnvironmentChangeImpact(
           workspacePath: args.workspacePath,
           workspaceProvisionType: args.workspaceProvisionType,
         },
+        maxFiles: MAX_CHANGED_FILES,
         target: { type: "uncommitted" },
       },
     });

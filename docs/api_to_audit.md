@@ -649,3 +649,22 @@ other pane's copy (or release its owned state). The thread-list slot omits it
 deliberately: it mounts once, and a crash there should disable it everywhere.
 Confirm that split before stabilizing, and decide whether other multi-mount
 slots need the same treatment.
+
+## `bb.hosts.experimental_callRetryableOnlineRpc`
+
+**What it does.** Lets a server plugin invoke a retryable host-daemon RPC on a
+connected enrolled machine. The server owns enrollment validation, transport
+routing, and timeout handling; plugins pass `hostId`, `command`, and
+`timeoutMs` only.
+
+**Audit before stabilizing.**
+
+1. **Authorization surface.** Confirm which plugins may call which command
+   types, and whether usage-analytics should remain the only consumer or a
+   generic escape hatch is acceptable.
+2. **Error semantics.** Revisit how `ApiError` codes (`host_unavailable`,
+   `command_timeout`) surface to plugin RPC callers and the UI.
+3. **Retry policy.** Document interaction with `ensureHostSessionReadyForWork`
+   and whether plugins need cancellation or per-host parallelism controls.
+4. **Type coupling.** Decide whether `@bb/host-daemon-contract` types belong
+   on `PluginHosts` long term or should be narrowed to an allowlisted subset.

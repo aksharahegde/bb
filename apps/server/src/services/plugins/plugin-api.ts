@@ -397,6 +397,7 @@ export function createPluginApi(options: {
     signal?: AbortSignal;
   }) => Promise<PluginInteractionResult>;
   ensureSharedPortTunnel: PluginHosts["ensureSharedPortTunnel"];
+  callRetryableOnlineRpc: PluginHosts["experimental_callRetryableOnlineRpc"];
   validateSharedPortDeclaration: (
     hostId: string,
     ports: readonly number[],
@@ -445,6 +446,7 @@ export function createPluginApi(options: {
     reportAgentToolProblem,
     requestInteraction,
     ensureSharedPortTunnel,
+    callRetryableOnlineRpc,
     validateSharedPortDeclaration,
     declareSharedPorts,
     replaceDeclaredSharedPorts,
@@ -1288,6 +1290,10 @@ export function createPluginApi(options: {
           validateSharedPortDeclaration(hostId, ports),
         );
       }
+    },
+    experimental_callRetryableOnlineRpc(args) {
+      assertLive();
+      return callRetryableOnlineRpc(args);
     },
   };
   const events: PluginEvents = {

@@ -2,6 +2,10 @@ import type Database from "better-sqlite3";
 import type { Context } from "hono";
 import type * as z from "zod";
 import type { ProviderFork } from "@bb/domain/provider-fork";
+import type {
+  HostDaemonOnlineRpcResultForCommand,
+  HostDaemonRetryableOnlineRpcCommand,
+} from "@bb/host-daemon-contract";
 import type { BbSdk } from "@bb/sdk";
 import type { ThreadResponse } from "@bb/server-contract";
 import type { JsonValue } from "./json-value.js";
@@ -804,6 +808,19 @@ export interface PluginHosts {
    * accepted here: it is owned by the daemon's trusted enrollment.
    */
   declareSharedPorts(hostId: string, ports: readonly number[]): void;
+
+  /**
+   * Invoke a retryable host-daemon RPC on a connected machine. The server
+   * validates enrollment and routes the command; plugins cannot influence
+   * tunnel identity or daemon credentials.
+   */
+  experimental_callRetryableOnlineRpc<
+    TCommand extends HostDaemonRetryableOnlineRpcCommand,
+  >(args: {
+    hostId: string;
+    command: TCommand;
+    timeoutMs: number;
+  }): Promise<HostDaemonOnlineRpcResultForCommand<TCommand>>;
 }
 
 // ---------------------------------------------------------------------------

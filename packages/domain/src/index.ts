@@ -8,6 +8,7 @@ export * from "./app-settings.js";
 export * from "./app-keybindings.js";
 export * from "./app-theme.js";
 export * from "./background-task.js";
+export * from "./change-impact.js";
 export * from "./change-kinds.js";
 export * from "./code-theme.js";
 export * from "./claude-task-tools.js";
