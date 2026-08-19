@@ -34,6 +34,7 @@ vi.mock("@/hooks/queries/system-queries", () => ({
   useSystemConfig: () => ({
     data: {
       generalSettings: { ...defaultAppSettings },
+      mcpServers: [],
       keybindings: [
         {
           command: "thread.previous" as const,

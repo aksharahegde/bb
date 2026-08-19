@@ -32,6 +32,7 @@ import {
   type Task,
   type TaskMutationResult,
 } from "../shared/contract";
+import { importAutonomousBacklogForBbProject } from "../import-autonomous-backlog";
 import {
   TASK_SORTS,
   TASKS_PAGE_DEFAULT_LIMIT,
@@ -74,6 +75,7 @@ Commands:
   attach                         Attach an agent thread to a task
   threads                        List threads attached to a task
   seed-demo                      Create sample data (requires --yes)
+  import-backlog                 Import .bb/tasks/tasks.json into Tasks
 
 Run bb tasks <command> --help for command usage.`;
 
@@ -1953,6 +1955,12 @@ export function registerTasksCli(
         summary: "Create sample folders, projects, labels, tasks, and comments",
         usage: "bb tasks seed-demo --yes [--json]",
       },
+      {
+        name: "import-backlog",
+        summary:
+          "Import Autonomous Backlog .bb/tasks/tasks.json into Tasks (idempotent)",
+        usage: "bb tasks import-backlog [--bb-project <proj_id>] [--json]",
+      },
     ],
     async run(argv, ctx): Promise<PluginCliResult> {
       try {
@@ -2036,6 +2044,42 @@ export function registerTasksCli(
                   ["Tasks", result.tasksCreated],
                   ["Comments", result.commentsCreated],
                   ["BB project", result.linkedBbProjectId ?? "-"],
+                ]);
+            break;
+          }
+          case "import-backlog": {
+            const args = parseArgs(rest);
+            assertAllowed(args, ["bb-project"]);
+            requirePositionals(
+              args,
+              0,
+              "bb tasks import-backlog [--bb-project <proj_id>] [--json]",
+            );
+            const bbProjectId =
+              option(args, "bb-project") ?? ctx.projectId ?? null;
+            if (!bbProjectId) {
+              throw new CliError(
+                "missing --bb-project and no BB project context is available",
+              );
+            }
+            const result = await importAutonomousBacklogForBbProject({
+              bb,
+              store,
+              bbProjectId,
+            });
+            publishProjectsChanged(bb, result.projectId);
+            stdout = args.flags.has("json")
+              ? json(result)
+              : detail([
+                  ["Tracker project", result.projectKeyPrefix],
+                  ["Imported", result.imported],
+                  ["Skipped", result.skipped],
+                  [
+                    "Created",
+                    result.createdKeys.length > 0
+                      ? result.createdKeys.join(", ")
+                      : "-",
+                  ],
                 ]);
             break;
           }

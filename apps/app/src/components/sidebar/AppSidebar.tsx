@@ -31,7 +31,7 @@ import {
   MACOS_WINDOW_DRAG_CLASS,
   shouldUseMacosDesktopChrome,
 } from "@/lib/bb-desktop";
-import { getRootComposeRoutePath, getThreadRoutePath } from "@/lib/route-paths";
+import { getRootComposeRoutePath, getThreadRoutePath, MISSION_CONTROL_ROUTE_PATH } from "@/lib/route-paths";
 import { useThreadSplitsEnabled } from "@/hooks/useThreadSplitsEnabled";
 import { usePaneContentSplitDrag } from "./usePaneContentSplitDrag";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
@@ -325,6 +325,20 @@ export function AppSidebar({
               query: threadSearch.query,
             }}
           />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Mission Control">
+                <Link
+                  to={MISSION_CONTROL_ROUTE_PATH}
+                  onClick={closeOnMobile}
+                  data-testid="mission-control-nav"
+                >
+                  <Icon name="ChartColumn" />
+                  <span>Mission Control</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
           <PluginNavSidebarItems
             placement="primary"
             onNavigate={closeOnMobile}

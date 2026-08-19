@@ -52,6 +52,7 @@ const defaultKeybindings: AppKeybindings = [
 function systemConfig(): SystemConfigResponse {
   return {
     generalSettings: defaultAppSettings,
+    mcpServers: [],
     keybindings: defaultKeybindings,
     defaultKeybindings,
     keybindingOverrides: [],

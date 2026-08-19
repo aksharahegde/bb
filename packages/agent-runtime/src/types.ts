@@ -3,6 +3,7 @@ import type {
   AvailableModel,
   ClientTurnRequestId,
   DynamicTool,
+  ExternalMcpServer,
   InstructionMode,
   JsonObject,
   PendingInteractionCreate,
@@ -198,6 +199,7 @@ export interface StartThreadArgs {
   options: AgentRuntimeExecutionOptions;
   instructions?: string;
   dynamicTools?: DynamicTool[];
+  externalMcpServers?: ExternalMcpServer[];
   disallowedTools?: readonly string[];
   instructionMode?: InstructionMode;
   /** JSON Schema constraining the session's structured output. Session-level
@@ -229,6 +231,7 @@ export interface PrepareThreadRewindArgs {
   options: AgentRuntimeExecutionOptions;
   instructions?: string;
   dynamicTools?: DynamicTool[];
+  externalMcpServers?: ExternalMcpServer[];
   disallowedTools?: readonly string[];
   instructionMode?: InstructionMode;
 }
@@ -252,6 +255,7 @@ export interface ResumeThreadArgs {
   options: AgentRuntimeExecutionOptions;
   instructions?: string;
   dynamicTools?: DynamicTool[];
+  externalMcpServers?: ExternalMcpServer[];
   disallowedTools?: readonly string[];
   instructionMode?: InstructionMode;
 }

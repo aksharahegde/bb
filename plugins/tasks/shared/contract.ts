@@ -474,6 +474,23 @@ export const tasksRpcContract = defineRpcContract({
     input: z.object({ folderId: idSchema.nullable().optional() }).strict(),
     output: z.object({ projects: z.array(projectSchema) }).strict(),
   },
+  /**
+   * Import `.bb/tasks/tasks.json` (Autonomous Backlog) into the Tasks tracker
+   * for a linked BB project. Creates a linked tracker project when missing.
+   * Idempotent: skips rows whose Legacy ID is already present.
+   */
+  importAutonomousBacklog: {
+    input: z.object({ bbProjectId: z.string().startsWith("proj_") }).strict(),
+    output: z
+      .object({
+        projectId: idSchema,
+        projectKeyPrefix: projectPrefixSchema,
+        imported: z.number().int().nonnegative(),
+        skipped: z.number().int().nonnegative(),
+        createdKeys: z.array(z.string()),
+      })
+      .strict(),
+  },
   createTask: {
     input: z
       .object({

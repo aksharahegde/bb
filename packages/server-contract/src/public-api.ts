@@ -8,6 +8,7 @@ import type {
   Environment,
   Experiments,
   Host,
+  McpRegistry,
   PendingInteraction,
   ProjectExecutionDefaults,
   ProjectSource,
@@ -20,6 +21,7 @@ import {
   appKeybindingOverridesSchema,
   appThemeSelectionSchema,
   experimentsSchema,
+  mcpRegistrySchema,
 } from "@bb/domain";
 import type {
   DiscoverReposResult,
@@ -1341,6 +1343,12 @@ export const publicApiRoutes = {
         appKeybindingOverridesSchema,
       ),
       response: jsonResponse<AppKeybindingOverrides>(),
+    }),
+    mcpSettings: defineRoute({
+      path: "/settings/mcp",
+      method: "put",
+      request: jsonRequest<EmptyInput, McpRegistry>(mcpRegistrySchema),
+      response: jsonResponse<McpRegistry>(),
     }),
     experiments: defineRoute({
       path: "/settings/experiments",

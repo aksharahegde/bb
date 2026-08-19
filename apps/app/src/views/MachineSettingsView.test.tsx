@@ -57,6 +57,7 @@ function host(overrides: Partial<Host> = {}): Host {
 function systemConfig(): SystemConfigResponse {
   return {
     generalSettings: defaultAppSettings,
+    mcpServers: [],
     keybindings: [],
     defaultKeybindings: [],
     keybindingOverrides: [],

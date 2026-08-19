@@ -32,6 +32,8 @@ out
 # misc
 .DS_Store
 *.pem
+.cursor/
+.playwright-mcp/
 
 # temporary scripts
 .tmp/

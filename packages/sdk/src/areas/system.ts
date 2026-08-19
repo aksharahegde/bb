@@ -2,6 +2,7 @@ import type {
   AppKeybindingOverrides,
   AppSettings,
   Experiments,
+  McpRegistry,
 } from "@bb/domain";
 import type {
   DiscoverReposResult,
@@ -71,6 +72,7 @@ export type SystemVoiceTranscriptionResult = SystemVoiceTranscriptionResponse;
 export type SystemUpdateExperimentsResult = Experiments;
 export type SystemUpdateGeneralSettingsResult = AppSettings;
 export type SystemUpdateKeyboardSettingsResult = AppKeybindingOverrides;
+export type SystemUpdateMcpSettingsResult = McpRegistry;
 export type SystemUsageLimitsResult = ProviderUsageResponse;
 export interface SystemOnboardingArgs extends SystemProvidersQuery {
   signal?: AbortSignal;
@@ -111,6 +113,7 @@ export interface SystemArea {
   updateKeyboardSettings(
     args: AppKeybindingOverrides,
   ): Promise<SystemUpdateKeyboardSettingsResult>;
+  updateMcpSettings(args: McpRegistry): Promise<SystemUpdateMcpSettingsResult>;
   /** Report one onboarding funnel event to anonymous telemetry. */
   onboardingEvent(args: OnboardingTelemetryEvent): Promise<{ ok: true }>;
   /** Live agent state for onboarding: install, auth, and plan per provider. */
@@ -217,6 +220,11 @@ export function createSystemArea(args: CreateSdkAreaArgs): SystemArea {
     async updateKeyboardSettings(input) {
       return transport.readJson(
         transport.api.v1.settings.keyboard.$put({ json: input }),
+      );
+    },
+    async updateMcpSettings(input) {
+      return transport.readJson(
+        transport.api.v1.settings.mcp.$put({ json: input }),
       );
     },
     async onboardingEvent(input) {

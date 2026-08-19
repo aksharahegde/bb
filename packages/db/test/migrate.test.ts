@@ -342,6 +342,7 @@ function dropRewindAddedTables(db: DbConnection): void {
   dropNewOnboardingExperimentColumn(db);
   dropSteerActiveThreadOnEnterColumn(db);
   dropOnboardingCompletedAtColumn(db);
+  dropMcpServersColumn(db);
   // Thread visibility was added after the legacy checkpoints these tests
   // replay, so remove it before applying the forward migration chain again.
   db.$client.prepare("ALTER TABLE threads DROP COLUMN visibility").run();
@@ -609,6 +610,17 @@ function dropOnboardingCompletedAtColumn(db: DbConnection): void {
     db.$client
       .prepare("ALTER TABLE app_settings DROP COLUMN onboarding_completed_at")
       .run();
+  }
+}
+
+// Migration 0093 adds the MCP registry JSON column. Rewind scenarios that
+// clear migrations through 0093 must drop it before replay.
+function dropMcpServersColumn(db: DbConnection): void {
+  const columns = db.$client
+    .prepare<[], TableInfoRow>("PRAGMA table_info(app_settings)")
+    .all();
+  if (columns.some((column) => column.name === "mcp_servers")) {
+    db.$client.prepare("ALTER TABLE app_settings DROP COLUMN mcp_servers").run();
   }
 }
 
@@ -1517,6 +1529,7 @@ describe("migrate", () => {
     // exactly what an upgrading user's database looks like.
     restoreWideExperimentsTable(db);
     dropOnboardingCompletedAtColumn(db);
+    dropMcpServersColumn(db);
     dropNewOnboardingExperimentColumn(db);
     dropEnvironmentRetireRequestedAtColumn(db);
     dropPluginArtifactGitCheckoutRootColumn(db);
@@ -1809,6 +1822,7 @@ describe("migrate", () => {
       restorePluginsExperimentColumn(db);
       dropSteerActiveThreadOnEnterColumn(db);
       dropOnboardingCompletedAtColumn(db);
+      dropMcpServersColumn(db);
       dropNewOnboardingExperimentColumn(db);
       dropHostMaxPermissionModeColumn(db);
       dropEnvironmentRetireRequestedAtColumn(db);
@@ -2211,6 +2225,7 @@ describe("migrate", () => {
       restorePluginsExperimentColumn(db);
       dropSteerActiveThreadOnEnterColumn(db);
       dropOnboardingCompletedAtColumn(db);
+      dropMcpServersColumn(db);
       dropNewOnboardingExperimentColumn(db);
       dropHostMaxPermissionModeColumn(db);
       dropEnvironmentRetireRequestedAtColumn(db);
@@ -2310,6 +2325,7 @@ describe("migrate", () => {
       restorePluginsExperimentColumn(db);
       dropSteerActiveThreadOnEnterColumn(db);
       dropOnboardingCompletedAtColumn(db);
+      dropMcpServersColumn(db);
       dropNewOnboardingExperimentColumn(db);
       dropHostMaxPermissionModeColumn(db);
       dropEnvironmentRetireRequestedAtColumn(db);

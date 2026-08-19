@@ -2,6 +2,7 @@ import type {
   AvailableModel,
   ClientTurnRequestId,
   DynamicTool,
+  ExternalMcpServer,
   InstructionMode,
   PromptInput,
   ClaudeCodeMockCliTrafficConfig,
@@ -95,6 +96,7 @@ export type AdapterCommand =
       input?: PromptInput[];
       options: ProviderExecutionContext;
       dynamicTools?: DynamicTool[];
+      externalMcpServers?: ExternalMcpServer[];
       disallowedTools?: readonly string[];
       instructionMode: InstructionMode;
     }
@@ -105,6 +107,7 @@ export type AdapterCommand =
       providerThreadId: string;
       options: ProviderExecutionContext;
       dynamicTools?: DynamicTool[];
+      externalMcpServers?: ExternalMcpServer[];
       disallowedTools?: readonly string[];
       instructionMode: InstructionMode;
     }
@@ -116,6 +119,7 @@ export type AdapterCommand =
       sourceProviderCheckpointId?: string;
       options: ProviderExecutionContext;
       dynamicTools?: DynamicTool[];
+      externalMcpServers?: ExternalMcpServer[];
       disallowedTools?: readonly string[];
       instructionMode: InstructionMode;
     }

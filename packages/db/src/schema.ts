@@ -195,6 +195,8 @@ export const appSettings = sqliteTable("app_settings", {
     .notNull()
     .default(false),
   keybindingOverrides: text("keybinding_overrides").notNull().default("[]"),
+  /** JSON array of user-registered external MCP servers (Settings → MCP). */
+  mcpServers: text("mcp_servers").notNull().default("[]"),
   /** ISO timestamp of the last onboarding completion/dismissal; null = never. */
   onboardingCompletedAt: text("onboarding_completed_at"),
   updatedAt: integer("updated_at").notNull(),

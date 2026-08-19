@@ -48,6 +48,10 @@ function registerPanel(
     experimentalSidebarAccessory?: ComponentType;
   } = {},
 ) {
+  const experimentalSidebarAccessory =
+    typeof options === "function" ? options : undefined;
+  const sidebarPlacement =
+    typeof options === "function" ? undefined : options.sidebarPlacement;
   setPluginSlotRegistrations(
     pluginId,
     registrationSet({

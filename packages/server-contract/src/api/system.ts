@@ -8,6 +8,7 @@ import {
   availableModelSchema,
   experimentsSchema,
   featureFlagsSchema,
+  mcpRegistrySchema,
   permissionModeSchema,
   pluginThemeMetaSchema,
   providerInfoSchema,
@@ -197,6 +198,8 @@ export type OnboardingTelemetryEvent = z.infer<
 export const systemConfigResponseSchema = z.object({
   /** App-wide Settings → General preferences, persisted server-side. */
   generalSettings: appSettingsSchema,
+  /** User-registered external MCP servers (Settings → MCP). */
+  mcpServers: mcpRegistrySchema,
   /** Server-resolved keyboard bindings shared by every connected app window. */
   keybindings: appKeybindingsSchema,
   /** Server defaults, before the user's per-command overrides are applied. */

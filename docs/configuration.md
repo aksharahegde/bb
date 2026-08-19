@@ -775,9 +775,11 @@ or spend-control limits that do not report a reset time.
 
 ### Workflows plugin
 
-The builtin Workflows plugin is disabled on fresh installations. Enable it
-under Extensions → Plugins or with `bb plugin enable workflows`. Its six
-settings accept base-10 integer strings through Extensions → Plugins or
+The builtin Workflows plugin is enabled on fresh installations. If disabled,
+re-enable it under Extensions → Plugins or with `bb plugin enable workflows`.
+Claude Code's native Workflow tool remains Claude-only (`supportsWorkflows`);
+Codex, Pi, and ACP do not expose that native tool. Its six settings accept
+base-10 integer strings through Extensions → Plugins or
 `bb plugin config workflows set <key> <value>`:
 
 | Key                    |    Default |       Allowed range | Behavior                                               |

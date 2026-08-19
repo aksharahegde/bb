@@ -54,8 +54,12 @@ detail page, or configure it with
 `bb plugin config provider-retry set maximumWait <value>`.
 
 The builtin Workflows plugin runs durable provider-independent JavaScript
-orchestration. It is disabled on fresh installations; enable `workflows` under
-Extensions → Plugins or run `bb plugin enable workflows` before using:
+orchestration and is enabled on fresh installations. If it was previously
+disabled, enable `workflows` under Extensions → Plugins or run
+`bb plugin enable workflows`. Separately, Claude Code's native Workflow tool
+is Claude-only (`supportsWorkflows`); Codex, Pi, and ACP do not expose that
+native tool — keep the plugin enabled anyway; unsupported providers simply
+omit Claude-native workflow surfaces:
 
   bb workflows validate (--script '<javascript>'|--source '<javascript>'|
                         --file <path>|--name <name>)
@@ -155,6 +159,28 @@ the filters, sort, and task-list revision. Any add, removal, reorder, update,
 label-link/name change, active-thread change, or project-prefix change invalidates an
 outstanding cursor; restart without `--cursor` instead of accepting a mixed
 snapshot.
+
+Import a legacy Autonomous Backlog file with:
+
+  bb tasks import-backlog [--bb-project <proj_id>] [--json]
+
+New agent follow-ups should use Tasks (`bb tasks create` or the Autonomous
+Backlog `create_task` shim). Do not write new `.bb/tasks/tasks.json` files.
+
+The Graphify plugin is an opt-in official plugin bundled with the app:
+`bb plugin install graphify`. It wraps the host `graphify` CLI for AST-only
+workspace graphs under `graphify-out/` (gitignore; do not commit). Common
+commands:
+
+  bb graphify status [--json]
+  bb graphify update [--json]
+  bb graphify query "<question>" [--dfs] [--budget N] [--json]
+  bb graphify path "<A>" "<B>" [--json]
+  bb graphify affected "<X>" [--depth N] [--json]
+  bb graphify god-nodes [--top N] [--json]
+
+Requires `graphify` on PATH. Use `bb graphify affected` before risky edits.
+Agents may also use `graphify --mcp` when available.
 
 The builtin Secrets plugin provides a secure credential form and guarded
 dotenv reconciliation:
@@ -313,12 +339,12 @@ rollback, and remove keep working per plugin.
 
 BB Official plugins
 
-BB's official plugins — GitHub, Docs, Memory, and Tasks — ship bundled inside
+BB's official plugins — GitHub, Docs, Memory, Tasks, and Graphify — ship bundled inside
 the app itself. They appear in Extensions → Plugins → Browse
 and install with one click from the local bundled copy: no network, no
 download, no separate release. Install from the CLI by bare name
 (`bb plugin install github`, `bb plugin install docs`, `bb plugin install
-memory`, or `bb plugin install tasks`). Installed official plugins are pinned
+memory`, `bb plugin install tasks`, or `bb plugin install graphify`). Installed official plugins are pinned
 to the bundled copy and update automatically when the BB app updates.
 
 The BB Community marketplace (reserved name `bb-community`) lists reviewed
@@ -685,7 +711,7 @@ in a checkout). The builtin `inline-vis` plugin renders
 path-shaped, sandboxed worktree HTML iframe preview; `height` is optional.
 Its card header includes an open-in-sidebar action for the source HTML file.
 The `plugins/` directory contains every bundled plugin: the auto-installed
-builtins and the store-only BB Official GitHub, Docs, Memory, and Tasks
+builtins and the store-only BB Official GitHub, Docs, Memory, Tasks, and Graphify
 plugins. The `examples/plugins/` reference plugins cover slack-bot (webhook
 bot), agent-enrichment (agent surfaces), composer-customization (all composer
 regions), and t3sidebar (a replacement sidebar thread list). Thread Hover

@@ -234,6 +234,7 @@ function threadStartCommand(
     },
     instructions: "Be a helpful coding agent.",
     dynamicTools: [],
+    externalMcpServers: [],
     injectedSkillSources: [],
     instructionMode: "append",
   };
@@ -271,6 +272,7 @@ function turnSubmitCommand(
       providerThreadId: "prov-1",
       instructions: "Be a helpful coding agent.",
       dynamicTools: [],
+      externalMcpServers: [],
       injectedSkillSources: [],
       instructionMode: "append",
     },

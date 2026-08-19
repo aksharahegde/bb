@@ -2,8 +2,11 @@ import { eq } from "drizzle-orm";
 import {
   appKeybindingOverridesSchema,
   defaultAppSettings,
+  defaultMcpRegistry,
+  mcpRegistrySchema,
   type AppKeybindingOverrides,
   type AppSettings,
+  type McpRegistry,
 } from "@bb/domain";
 import type { DbConnection } from "../connection.js";
 import { appSettings } from "../schema.js";
@@ -99,6 +102,38 @@ export function setAppKeybindingOverrides(
       target: appSettings.id,
       set: {
         keybindingOverrides: JSON.stringify(overrides),
+        updatedAt,
+      },
+    })
+    .run();
+}
+
+export function getMcpRegistry(db: DbConnection): McpRegistry {
+  const row = db
+    .select({ mcpServers: appSettings.mcpServers })
+    .from(appSettings)
+    .where(eq(appSettings.id, APP_SETTINGS_ROW_ID))
+    .get();
+
+  if (row === undefined) {
+    return defaultMcpRegistry;
+  }
+  return mcpRegistrySchema.parse(JSON.parse(row.mcpServers));
+}
+
+export function setMcpRegistry(db: DbConnection, registry: McpRegistry): void {
+  const updatedAt = Date.now();
+  const serialized = JSON.stringify(mcpRegistrySchema.parse(registry));
+  db.insert(appSettings)
+    .values({
+      id: APP_SETTINGS_ROW_ID,
+      mcpServers: serialized,
+      updatedAt,
+    })
+    .onConflictDoUpdate({
+      target: appSettings.id,
+      set: {
+        mcpServers: serialized,
         updatedAt,
       },
     })

@@ -143,7 +143,7 @@ export const backlogRpcContract = defineRpcContract({
 export const REALTIME_CHANNEL = "autonomous-backlog-changed";
 
 const PASSIVE_DISCOVERY_INSTRUCTIONS =
-  "[Autonomous Backlog Hook: While completing primary tasks, if you discover unhandled edge cases, missing test coverage, or obvious tech debt in touched files, call create_task to log them into the Autonomous Backlog without interrupting your main objective unless strictly necessary.]";
+  "[Autonomous Backlog Hook: While completing primary tasks, if you discover unhandled edge cases, missing test coverage, or obvious tech debt in touched files, call create_task (writes Tasks) to log them without interrupting your main objective unless strictly necessary. Prefer `bb tasks` for inspection. Legacy `.bb/tasks/tasks.json` imports via `bb tasks import-backlog`.]";
 
 function toolError(message: string): PluginAgentToolResult {
   return { content: [{ type: "text", text: message }], isError: true };
@@ -272,7 +272,7 @@ export default async function plugin(bb: BbPluginApi) {
   bb.agents.registerTool({
     name: "create_task",
     description:
-      "Log a discovered tech-debt, test, refactor, bug, or security follow-up into the project's Autonomous Backlog (.bb/tasks/tasks.json).",
+      "Log a discovered tech-debt, test, refactor, bug, or security follow-up into Tasks (Autonomous Backlog shim; was .bb/tasks/tasks.json).",
     instructions:
       "Use create_task for follow-ups discovered during routine work. Do not block the primary objective unless resolution is strictly necessary.",
     parameters: z

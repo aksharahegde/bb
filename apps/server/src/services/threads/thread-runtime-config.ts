@@ -1,6 +1,7 @@
-import { getEnvironment, getHost, getProject } from "@bb/db";
+import { getEnvironment, getHost, getMcpRegistry, getProject } from "@bb/db";
 import type {
   DynamicTool,
+  ExternalMcpServer,
   InstructionMode,
   PermissionEscalation,
   ProjectExecutionDefaults,
@@ -12,6 +13,7 @@ import type {
   WorkspaceProvisionType,
   EnvironmentStatus,
 } from "@bb/domain";
+import { toExternalMcpServers } from "@bb/domain";
 import type { HostDaemonInjectedSkillSource } from "@bb/host-daemon-contract";
 import { renderTemplate } from "@bb/templates";
 import { ApiError } from "../../errors.js";
@@ -34,6 +36,17 @@ import { resolveWorkspaceProjectSkills } from "../skills/workspace-skills.js";
 import { resolveSharedSkills } from "../skills/shared-skills.js";
 import { UPDATE_ENVIRONMENT_DIRECTORY_TOOL } from "./thread-environment-directory.js";
 import {
+  assembleContextInstructions,
+  CONTEXT_SOURCE_PRIORITY,
+  DEFAULT_CHANGE_IMPACT_MAX_CHARS,
+  DEFAULT_PLUGIN_CONTRIBUTE_MAX_CHARS,
+  type ContextChunk,
+} from "../context/index.js";
+import {
+  renderChangeImpactContextChunk,
+} from "@bb/domain";
+import { resolveEnvironmentChangeImpact } from "../impact/index.js";
+import {
   DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH,
   WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH,
   readDataDirAgentInstructions,
@@ -48,7 +61,8 @@ const UPDATE_ENVIRONMENT_DIRECTORY_INSTRUCTIONS =
   "If the user asks you to move this thread to another checkout, worktree, or directory, make sure the target directory exists, then call `update_environment_directory` with its absolute path. After it succeeds, stop work in the current turn; future turns will run in the updated environment.";
 
 /** Cap on each plugin's contributeInstructions output (per resolution). */
-const PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS = 4096;
+const PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS =
+  DEFAULT_PLUGIN_CONTRIBUTE_MAX_CHARS;
 
 export interface ThreadRuntimeCommandEnvironment {
   hostId: string;
@@ -81,6 +95,7 @@ export interface ResolvePermissionEscalationArgs {
 
 export interface ResolvedThreadRuntimeCommandConfig {
   dynamicTools: DynamicTool[];
+  externalMcpServers: ExternalMcpServer[];
   injectedSkillSources: HostDaemonInjectedSkillSource[];
   instructionMode: InstructionMode;
   instructions: string;
@@ -89,6 +104,10 @@ export interface ResolvedThreadRuntimeCommandConfig {
   threadStoragePath: string;
   workspacePath: string;
   workspaceProvisionType: WorkspaceProvisionType;
+}
+
+function providerSupportsExternalMcp(providerId: string): boolean {
+  return providerId === "claude-code" || providerId.startsWith("acp-");
 }
 
 function requireWorkspacePath(
@@ -255,19 +274,60 @@ export async function resolveThreadRuntimeCommandConfig(
   const dynamicTools = dynamicToolContributions.map(
     (contribution) => contribution.tool,
   );
-  const instructionSections = [STANDARD_AGENT_INSTRUCTIONS];
+  const contextChunks: ContextChunk[] = [
+    {
+      id: "standard",
+      source: "standard",
+      provenance: "standard",
+      priority: CONTEXT_SOURCE_PRIORITY.standard,
+      text: STANDARD_AGENT_INSTRUCTIONS,
+    },
+  ];
   // Per-tool instructions: each dynamic tool carries its own snippet (the
   // built-in update_environment_directory guidance is one of them; plugin
   // tools are description-only unless they registered a snippet).
   for (const contribution of dynamicToolContributions) {
     if (!contribution.instructions) continue;
     if (contribution.pluginId === null) {
-      instructionSections.push(contribution.instructions);
+      contextChunks.push({
+        id: `tool:builtin:${contribution.tool.name}`,
+        source: "tool",
+        provenance: contribution.tool.name,
+        priority: CONTEXT_SOURCE_PRIORITY.tool,
+        text: contribution.instructions,
+      });
     } else {
-      instructionSections.push(
-        `The following instructions come from the BB plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
-        contribution.instructions,
-      );
+      contextChunks.push({
+        id: `tool:${contribution.pluginId}:${contribution.tool.name}`,
+        source: "tool",
+        provenance: contribution.pluginId,
+        priority: CONTEXT_SOURCE_PRIORITY.tool,
+        text: [
+          `The following instructions come from the BB plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
+          contribution.instructions,
+        ].join("\n\n"),
+      });
+    }
+  }
+  if (args.environment.status === "ready" && args.environment.path) {
+    const impact = await resolveEnvironmentChangeImpact(deps, {
+      hostId: args.environment.hostId,
+      environmentId: args.environment.id,
+      workspacePath: args.environment.path,
+      workspaceProvisionType: args.environment.workspaceProvisionType,
+    });
+    if (impact && impact.severity !== "none") {
+      const text = renderChangeImpactContextChunk(impact);
+      if (text.trim().length > 0) {
+        contextChunks.push({
+          id: "change_impact",
+          source: "change_impact",
+          provenance: "change-impact",
+          priority: CONTEXT_SOURCE_PRIORITY.change_impact,
+          text,
+          maxChars: DEFAULT_CHANGE_IMPACT_MAX_CHARS,
+        });
+      }
     }
   }
   // Legacy plugin-level contributeInstructions providers (after per-tool
@@ -291,43 +351,58 @@ export async function resolveThreadRuntimeCommandConfig(
       continue;
     }
     if (text === null || text.trim().length === 0) continue;
-    if (text.length > PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS) {
-      text = text.slice(0, PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS);
-    }
-    instructionSections.push(
-      `The following instructions come from the BB plugin "${contribution.pluginId}":`,
+    contextChunks.push({
+      id: `plugin_contribute:${contribution.pluginId}`,
+      source: "plugin_contribute",
+      provenance: contribution.pluginId,
+      priority: CONTEXT_SOURCE_PRIORITY.plugin_contribute,
       text,
-    );
+      maxChars: PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS,
+    });
   }
   // Conditional dynamic instructions follow the legacy/static plugin-level
   // providers on every thread, including side chats. Each configure output
   // was already validated and capped by the plugin service;
   // user/data-dir/workspace instructions still follow.
   for (const contribution of conditionalConfiguration.dynamicInstructions) {
-    instructionSections.push(
-      `The following dynamic instructions come from the BB plugin "${contribution.pluginId}":`,
-      contribution.text,
-    );
+    contextChunks.push({
+      id: `plugin_configure:${contribution.pluginId}:${contribution.text.slice(0, 32)}`,
+      source: "plugin_configure",
+      provenance: contribution.pluginId,
+      priority: CONTEXT_SOURCE_PRIORITY.plugin_configure,
+      text: contribution.text,
+    });
   }
   if (dataDirAgentInstructions) {
-    instructionSections.push(
-      `The following user instructions come from <dataDir>/${DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH}:`,
-      dataDirAgentInstructions,
-    );
+    contextChunks.push({
+      id: "data_dir_agents",
+      source: "data_dir_agents",
+      provenance: `<dataDir>/${DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH}`,
+      priority: CONTEXT_SOURCE_PRIORITY.data_dir_agents,
+      text: dataDirAgentInstructions,
+    });
   }
   if (workspaceAgentInstructions) {
-    instructionSections.push(
-      `The following workspace instructions come from ${WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH}:`,
-      workspaceAgentInstructions,
-    );
+    contextChunks.push({
+      id: "workspace_agents",
+      source: "workspace_agents",
+      provenance: WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH,
+      priority: CONTEXT_SOURCE_PRIORITY.workspace_agents,
+      text: workspaceAgentInstructions,
+    });
   }
-  const instructions = instructionSections.join("\n\n");
+  const { instructions } = assembleContextInstructions({
+    chunks: contextChunks,
+  });
   const threadStoragePath = await requireThreadStoragePath(deps, {
     hostId: args.environment.hostId,
     threadId: args.thread.id,
   });
   return {
     dynamicTools,
+    externalMcpServers: providerSupportsExternalMcp(args.thread.providerId)
+      ? toExternalMcpServers(getMcpRegistry(deps.db))
+      : [],
     injectedSkillSources,
     instructionMode: "append",
     instructions,

@@ -2610,8 +2610,8 @@ declare const projectResponseSchema: z$1.ZodObject<{
     gitRemoteUrl: z$1.ZodNullable<z$1.ZodString>;
     id: z$1.ZodString;
     kind: z$1.ZodEnum<{
-        personal: "personal";
         standard: "standard";
+        personal: "personal";
     }>;
     name: z$1.ZodString;
     sources: z$1.ZodArray<z$1.ZodObject<{
@@ -2655,8 +2655,8 @@ declare const projectWithThreadsResponseSchema: z$1.ZodObject<{
     gitRemoteUrl: z$1.ZodNullable<z$1.ZodString>;
     id: z$1.ZodString;
     kind: z$1.ZodEnum<{
-        personal: "personal";
         standard: "standard";
+        personal: "personal";
     }>;
     name: z$1.ZodString;
     sources: z$1.ZodArray<z$1.ZodObject<{
@@ -2916,24 +2916,24 @@ declare const environmentDiffFileQuerySchema: z$1.ZodDiscriminatedUnion<[z$1.Zod
     mergeBaseRef: z$1.ZodString;
     path: z$1.ZodString;
     side: z$1.ZodEnum<{
-        new: "new";
         old: "old";
+        new: "new";
     }>;
     target: z$1.ZodLiteral<"branch_committed">;
 }, z$1.core.$strip>, z$1.ZodObject<{
     mergeBaseRef: z$1.ZodString;
     path: z$1.ZodString;
     side: z$1.ZodEnum<{
-        new: "new";
         old: "old";
+        new: "new";
     }>;
     target: z$1.ZodLiteral<"all">;
 }, z$1.core.$strip>, z$1.ZodObject<{
     path: z$1.ZodString;
     sha: z$1.ZodString;
     side: z$1.ZodEnum<{
-        new: "new";
         old: "old";
+        new: "new";
     }>;
     target: z$1.ZodLiteral<"commit">;
 }, z$1.core.$strip>], "target">;
@@ -3807,6 +3807,19 @@ declare const hostDaemonCommandRegistry: {
         fork: z$1.ZodOptional<z$1.ZodObject<{
             sourceProviderThreadId: z$1.ZodString;
         }, z$1.core.$strip>>;
+        externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
+            name: z$1.ZodString;
+            transport: z$1.ZodEnum<{
+                stdio: "stdio";
+                http: "http";
+                sse: "sse";
+            }>;
+            command: z$1.ZodOptional<z$1.ZodString>;
+            args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            url: z$1.ZodOptional<z$1.ZodString>;
+            env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
+            envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+        }, z$1.core.$strict>>;
         injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
             description: z$1.ZodString;
             entryPath: z$1.ZodString;
@@ -4527,6 +4540,19 @@ declare const hostDaemonCommandRegistry: {
                 inputSchema: z$1.ZodUnknown;
                 name: z$1.ZodString;
             }, z$1.core.$strip>>;
+            externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
+                name: z$1.ZodString;
+                transport: z$1.ZodEnum<{
+                    stdio: "stdio";
+                    http: "http";
+                    sse: "sse";
+                }>;
+                command: z$1.ZodOptional<z$1.ZodString>;
+                args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+                url: z$1.ZodOptional<z$1.ZodString>;
+                env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
+                envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            }, z$1.core.$strict>>;
             injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
                 description: z$1.ZodString;
                 entryPath: z$1.ZodString;
@@ -4899,6 +4925,19 @@ declare const hostDaemonCommandRegistry: {
                 inputSchema: z$1.ZodUnknown;
                 name: z$1.ZodString;
             }, z$1.core.$strip>>;
+            externalMcpServers: z$1.ZodArray<z$1.ZodObject<{
+                name: z$1.ZodString;
+                transport: z$1.ZodEnum<{
+                    stdio: "stdio";
+                    http: "http";
+                    sse: "sse";
+                }>;
+                command: z$1.ZodOptional<z$1.ZodString>;
+                args: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+                url: z$1.ZodOptional<z$1.ZodString>;
+                env: z$1.ZodOptional<z$1.ZodRecord<z$1.ZodString, z$1.ZodString>>;
+                envFromHost: z$1.ZodOptional<z$1.ZodArray<z$1.ZodString>>;
+            }, z$1.core.$strict>>;
             injectedSkillSources: z$1.ZodArray<z$1.ZodDiscriminatedUnion<[z$1.ZodObject<{
                 description: z$1.ZodString;
                 entryPath: z$1.ZodString;
@@ -13147,6 +13186,7 @@ type SystemVoiceTranscriptionResult = SystemVoiceTranscriptionResponse;
 type SystemUpdateExperimentsResult = Experiments;
 type SystemUpdateGeneralSettingsResult = AppSettings;
 type SystemUpdateKeyboardSettingsResult = AppKeybindingOverrides;
+type SystemUpdateMcpSettingsResult = McpRegistry;
 type SystemUsageLimitsResult = ProviderUsageResponse;
 interface SystemOnboardingArgs extends SystemProvidersQuery {
     signal?: AbortSignal;
@@ -13174,6 +13214,7 @@ interface SystemArea {
     updateExperiments(args: Experiments): Promise<SystemUpdateExperimentsResult>;
     updateGeneralSettings(args: AppSettings): Promise<SystemUpdateGeneralSettingsResult>;
     updateKeyboardSettings(args: AppKeybindingOverrides): Promise<SystemUpdateKeyboardSettingsResult>;
+    updateMcpSettings(args: McpRegistry): Promise<SystemUpdateMcpSettingsResult>;
     /** Report one onboarding funnel event to anonymous telemetry. */
     onboardingEvent(args: OnboardingTelemetryEvent): Promise<{
         ok: true;

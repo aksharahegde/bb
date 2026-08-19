@@ -342,6 +342,7 @@ type ExpectedSystemKey =
   | "updateExperiments"
   | "updateGeneralSettings"
   | "updateKeyboardSettings"
+  | "updateMcpSettings"
   | "onboardingAgents"
   | "onboardingEvent"
   | "onboardingRepos"

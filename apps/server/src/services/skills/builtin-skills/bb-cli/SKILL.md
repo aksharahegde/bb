@@ -353,6 +353,33 @@ Give spawned threads clear prompts: objective, constraints, expected deliverable
 validation to perform, and what to report back. Ask for outcome, changed files
 or artifacts, validation performed, and blockers.
 
+## Mission Control
+
+- Use `bb mission list [--project <id>] [--include-hidden] [--json]` for a fleet
+  list of non-archived threads (activity, pending input, parent links).
+- Use `bb mission status [--project <id>] [--json]` for busy / pending / failed /
+  idle counts. The app surface is `/mission`.
+
+## Change Impact
+
+- Use `bb impact [thread-id] [--environment <id>] [--self] [--json]` to summarize
+  dirty-tree risk before large edits.
+- Follow with `bb graphify affected "<symbol-or-file>"` for blast radius.
+
+## Orchestration Decision Tree
+
+Pick the lightest tool that fits:
+
+1. **Single agent turn** — stay in the current thread for focused work.
+2. **`bb thread spawn` / roster agents** — parallel specialists (CI Triage,
+   Security Reviewer, Test Author) with clear owners.
+3. **Automations** — recurring or event-driven jobs (cron / hooks).
+4. **Workflows** — durable JS orchestration via the `workflows` plugin (on by
+   default). Claude Code also has a native Workflow tool (`supportsWorkflows`);
+   Codex/Pi/ACP do not.
+5. **Mission Control** (`bb mission` / `/mission`) — fleet visibility, pending
+   approvals, CI/impact badges — not a substitute for spawning work.
+
 ## Coordinating Work
 
 - Use one clear owner per task.
@@ -639,9 +666,11 @@ add <key-or-comment-id> --file <path>` (task key = task-level; comment ID
 ## Workflows
 
 - The builtin `workflows` plugin runs durable provider-independent JavaScript
-  orchestration and is disabled on fresh installations. Enable it under
-  Extensions → Plugins or with `bb plugin enable workflows` before using its
-  command.
+  orchestration and is enabled on fresh installations. If disabled, re-enable
+  under Extensions → Plugins or with `bb plugin enable workflows`.
+- Claude Code's native Workflow tool is Claude-only (`supportsWorkflows`).
+  Codex, Pi, and ACP omit that native surface; the Workflows plugin still
+  runs JS orchestration across providers when enabled.
 - Author and check sources with `bb workflows validate (--script <javascript>|
 --source <javascript>|--file <path>|--name <name>)`; start a background run
   with the same selector via `bb workflows run ... [--args <json>] [--resume
@@ -736,7 +765,7 @@ them by mixing ink into canvas), the `--primary` accent, the secondary text tier
   (except `side-chat`, which is gated by the **"Side chat plugin"**
   experiment); official plugins install from the bundled store on demand.
 - **BB Official plugins** (store under `/api/v1/plugin-catalog`):
-  - BB's official plugins (GitHub, Docs, Memory, and Tasks) ship
+  - BB's official plugins (GitHub, Docs, Memory, Tasks, and Graphify) ship
     bundled inside the app and install from the local copy — no network. Installed official
     plugins are pinned to the bundled copy and update with BB app releases.
   - The store also lists the **BB Community marketplace** catalog: a manifest

@@ -10,6 +10,7 @@ import {
 } from "@bb/domain";
 import type {
   DynamicTool,
+  ExternalMcpServer,
   InstructionMode,
   ProviderErrorCategory,
   ThreadEvent,
@@ -214,6 +215,7 @@ interface ThreadRuntimeConfig {
    */
   bridgeLaunch?: AgentRuntimeBridgeLaunch;
   dynamicTools?: DynamicTool[];
+  externalMcpServers?: ExternalMcpServer[];
   disallowedTools?: readonly string[];
   environmentId: string;
   instructionMode: InstructionMode;
@@ -936,6 +938,9 @@ function createAgentRuntimeInternal(
       ...(currentConfig.dynamicTools !== undefined
         ? { dynamicTools: currentConfig.dynamicTools }
         : {}),
+      ...(currentConfig.externalMcpServers !== undefined
+        ? { externalMcpServers: currentConfig.externalMcpServers }
+        : {}),
       ...(currentConfig.disallowedTools !== undefined
         ? { disallowedTools: currentConfig.disallowedTools }
         : {}),
@@ -1087,6 +1092,7 @@ function createAgentRuntimeInternal(
         skillRoots: providerSkillRoots,
       }),
       dynamicTools: currentConfig.dynamicTools,
+      externalMcpServers: currentConfig.externalMcpServers,
       disallowedTools: currentConfig.disallowedTools,
       instructionMode: currentConfig.instructionMode,
     };
@@ -1460,6 +1466,7 @@ function createAgentRuntimeInternal(
       options: execOpts,
       instructions,
       dynamicTools,
+      externalMcpServers,
       disallowedTools,
       instructionMode = "append",
       outputSchema,
@@ -1501,6 +1508,7 @@ function createAgentRuntimeInternal(
           setThreadRuntimeConfig(threadId, {
             ...(bridgeLaunch !== undefined ? { bridgeLaunch } : {}),
             dynamicTools,
+            externalMcpServers,
             disallowedTools,
             environmentId,
             instructionMode,
@@ -1539,6 +1547,7 @@ function createAgentRuntimeInternal(
                 sourceProviderThreadId: fork.sourceProviderThreadId,
                 options: providerExecutionContext,
                 dynamicTools,
+                externalMcpServers,
                 disallowedTools,
                 instructionMode,
               }
@@ -1548,6 +1557,7 @@ function createAgentRuntimeInternal(
                 cwd: options.workspacePath,
                 options: providerExecutionContext,
                 dynamicTools,
+                externalMcpServers,
                 disallowedTools,
                 instructionMode,
                 ...(outputSchema !== undefined ? { outputSchema } : {}),
@@ -1658,6 +1668,7 @@ function createAgentRuntimeInternal(
       options: execOpts,
       instructions,
       dynamicTools,
+      externalMcpServers,
       disallowedTools,
       instructionMode = "append",
     }) {
@@ -1734,6 +1745,7 @@ function createAgentRuntimeInternal(
                 skillRoots: providerSkillRoots,
               }),
               dynamicTools,
+              externalMcpServers,
               disallowedTools,
               instructionMode,
             };
@@ -1843,6 +1855,7 @@ function createAgentRuntimeInternal(
       options: execOpts,
       instructions,
       dynamicTools,
+      externalMcpServers,
       disallowedTools,
       instructionMode = "append",
     }) {
@@ -1882,6 +1895,7 @@ function createAgentRuntimeInternal(
           setThreadRuntimeConfig(threadId, {
             ...(bridgeLaunch !== undefined ? { bridgeLaunch } : {}),
             dynamicTools,
+            externalMcpServers,
             disallowedTools,
             environmentId,
             instructionMode,
@@ -1923,6 +1937,7 @@ function createAgentRuntimeInternal(
               skillRoots: providerSkillRoots,
             }),
             dynamicTools,
+            externalMcpServers,
             disallowedTools,
             instructionMode,
           };

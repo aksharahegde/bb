@@ -68,6 +68,7 @@ describe("OnboardingHost", () => {
       data: {
         experiments: defaultExperiments,
         generalSettings: defaultAppSettings,
+        mcpServers: [],
       },
     });
 
@@ -85,6 +86,7 @@ describe("OnboardingHost", () => {
       data: {
         experiments: { ...defaultExperiments, newOnboarding: true },
         generalSettings: defaultAppSettings,
+        mcpServers: [],
       },
     });
 

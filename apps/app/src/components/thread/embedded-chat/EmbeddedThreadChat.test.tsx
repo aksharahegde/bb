@@ -214,6 +214,7 @@ vi.mock("@/hooks/queries/system-queries", () => ({
       generalSettings: {
         steerActiveThreadOnEnter: false,
       },
+      mcpServers: [],
     },
   }),
 }));

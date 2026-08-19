@@ -18,6 +18,7 @@
     "server.test.ts",
     "app.tsx",
     "vitest.config.ts",
-    "components"
+    "components",
+    "src"
   ]
 }

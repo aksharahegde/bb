@@ -167,8 +167,10 @@ export type {
 export {
   getAppKeybindingOverrides,
   getAppSettings,
+  getMcpRegistry,
   setAppKeybindingOverrides,
   setAppSettings,
+  setMcpRegistry,
 } from "./app-settings.js";
 export { getStoredThreadTabs, replaceStoredThreadTabs } from "./thread-tabs.js";
 export type {
