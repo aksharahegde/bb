@@ -1,0 +1,14 @@
+{
+  "_v": 3,
+  "composerId": "c1f6a176-422c-4530-8549-8135370ecd75",
+  "createdAt": 1786175878053,
+  "lastUpdatedAt": 1786176338625,
+  "fullConversationHeadersOnly": [
+    { "bubbleId": "5d91cdcb-73c3-4543-af22-440034cea9ec", "type": 1 },
+    { "bubbleId": "3499eacb-91ee-42c6-9e58-48d5ba4ac5ee", "type": 2 }
+  ],
+  "usageData": {
+    "default": { "costInCents": 8, "amount": 2 },
+    "claude-sonnet-5": { "costInCents": 12, "amount": 5 }
+  }
+}

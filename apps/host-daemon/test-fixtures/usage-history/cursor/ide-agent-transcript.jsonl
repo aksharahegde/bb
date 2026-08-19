@@ -1,0 +1,2 @@
+{"role":"user","message":{"content":[{"type":"text","text":"push, create pr"}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"I'll check git status first."},{"type":"tool_use","name":"Shell","input":{"command":"git status"}}]}}

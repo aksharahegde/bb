@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "cwd": "/tmp/example",
+  "title": "Example agent session",
+  "agentId": "00190954-bfdd-4576-86f4-3cb12a7e8fe1",
+  "createdAt": 1786383924834,
+  "lastUsedModel": "default",
+  "mode": "default"
+}

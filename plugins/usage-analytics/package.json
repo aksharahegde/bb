@@ -1,7 +1,7 @@
 {
-  "name": "bb-plugin-graphify",
+  "name": "bb-plugin-usage-analytics",
   "version": "0.1.0",
-  "description": "Codebase knowledge graph via Graphify — query, path, affected, and god-nodes for agents.",
+  "description": "All-time API cost and token usage analytics from Claude Code and Cursor.",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/get-bb/bb#readme",
@@ -11,15 +11,15 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/get-bb/bb.git",
-    "directory": "plugins/graphify"
+    "directory": "plugins/usage-analytics"
   },
   "type": "module",
   "files": [
     "dist",
+    "contract.ts",
     "server.ts",
     "app.tsx",
     "src",
-    "skills",
     "README.md"
   ],
   "engines": {
@@ -27,23 +27,20 @@
     "bbPluginSdk": "^0.4.1"
   },
   "bb": {
-    "name": "Graphify",
-    "description": "Codebase knowledge graph via Graphify — query, path, affected, and god-nodes for agents.",
+    "name": "Usage",
+    "description": "Estimated API costs and token usage from Claude Code and Cursor across enrolled machines.",
     "branding": {
-      "icon": "GitBranch"
+      "icon": "ChartLine"
     },
     "server": "./server.ts",
-    "app": "./app.tsx",
-    "skills": [
-      "skills"
-    ]
+    "app": "./app.tsx"
   },
   "keywords": [
     "bb-plugin"
   ],
   "scripts": {
-    "build": "node --conditions=source --import tsx ../../scripts/build-official-plugins.mjs graphify",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "node --conditions=source --import tsx ../../scripts/build-official-plugins.mjs usage-analytics",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts"
   },
   "devDependencies": {
@@ -51,12 +48,12 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2",
     "vitest": "^4.1.1"
   },
   "dependencies": {
+    "@bb/host-daemon-contract": "workspace:*",
     "@bb/shared-ui": "workspace:*",
     "zod": "^4.3.6"
   }

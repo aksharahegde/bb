@@ -200,6 +200,7 @@ describe("builtin plugin reconciliation", () => {
       "summary-hub",
       "usage-analytics",
       "agent-roster",
+      "graphify",
     ]);
     for (const name of optionalNames) {
       expect(BUILTIN_PLUGINS.map((plugin) => plugin.name)).not.toContain(name);
@@ -417,11 +418,11 @@ describe("builtin plugin reconciliation", () => {
     ]);
   });
 
-  it("ships Workflows disabled on a fresh database", async () => {
+  it("ships Workflows enabled on a fresh database", async () => {
     const workflows = BUILTIN_PLUGINS.find(
       (builtin) => builtin.name === "workflows",
     );
-    expect(workflows?.defaultEnabled).toBe(false);
+    expect(workflows?.defaultEnabled).toBe(true);
 
     service = createService({
       db,
@@ -436,8 +437,8 @@ describe("builtin plugin reconciliation", () => {
       {
         id: "workflows",
         source: "builtin:workflows",
-        enabled: false,
-        status: "disabled",
+        enabled: true,
+        status: "running",
       },
     ]);
   });

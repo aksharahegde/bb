@@ -4,7 +4,7 @@ import {
   useBbContext,
   useRpc,
   type PluginSettingsSectionProps,
-} from "@bb/plugin-sdk/app";
+} from "@get-bb/plugin-sdk/app";
 import { Badge } from "@bb/shared-ui/badge";
 import { Button } from "@bb/shared-ui/button";
 import {

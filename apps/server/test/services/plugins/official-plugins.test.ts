@@ -97,6 +97,7 @@ describe("official plugin registry invariants", () => {
       "autonomous-backlog": "Workflow management",
       docs: "Context & knowledge",
       github: "Developer tools",
+      graphify: "Developer tools",
       "inline-vis": "Interface",
       "keep-awake": "Host access",
       memory: "Context & knowledge",
