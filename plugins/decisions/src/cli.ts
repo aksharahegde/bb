@@ -1,4 +1,4 @@
-import type { BbPluginApi, PluginCliContext, PluginCliResult } from "@bb/plugin-sdk";
+import type { BbPluginApi, PluginCliContext, PluginCliResult } from "@get-bb/plugin-sdk";
 import { DecisionStore } from "./store.js";
 import { DECISION_STATUSES, isDecisionStatus, type DecisionStatus } from "./types.js";
 

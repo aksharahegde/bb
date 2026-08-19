@@ -31,6 +31,7 @@ import {
 import { resolveSkillCatalogSources } from "../skills/skill-catalog.js";
 import { discoverPluginSkillIds } from "../skills/injected-skills.js";
 import { resolveWorkspaceProjectSkills } from "../skills/workspace-skills.js";
+import { resolveSharedSkills } from "../skills/shared-skills.js";
 import { UPDATE_ENVIRONMENT_DIRECTORY_TOOL } from "./thread-environment-directory.js";
 import {
   DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH,
@@ -38,7 +39,6 @@ import {
   readDataDirAgentInstructions,
   readWorkspaceAgentInstructions,
 } from "./workspace-agent-instructions.js";
-export { getSupportedReasoningLevelsForProvider } from "./thread-reasoning-policy.js";
 
 const STANDARD_AGENT_INSTRUCTIONS = renderTemplate(
   "standardAgentAppendInstructions",
@@ -135,7 +135,10 @@ function resolveDynamicTools(
 export function resolvePermissionEscalation(
   args: ResolvePermissionEscalationArgs,
 ): PermissionEscalation {
-  if (args.initiator !== "user" || args.thread.parentThreadId !== null) {
+  // System turns (parent notifications, recovery) must not prompt. A
+  // user-started turn asks even on a delegated child so a sandbox-blocked
+  // action can surface on the parent instead of failing in silence.
+  if (args.initiator !== "user") {
     return "deny";
   }
 
@@ -143,7 +146,7 @@ export function resolvePermissionEscalation(
 }
 
 export async function resolveExecutionOptions(
-  deps: Pick<AppDeps, "db">,
+  deps: Pick<AppDeps, "db" | "providerRegistry">,
   args: ResolveExecutionOptionsArgs,
 ): Promise<ResolvedThreadExecutionOptions> {
   const plan = await resolveExistingThreadExecutionPlan(deps, {
@@ -176,16 +179,21 @@ export async function resolveThreadRuntimeCommandConfig(
   }
 
   const { workspaceProvisionType } = args.environment;
-  const [projectSkillSources, workspaceAgentInstructions] = await Promise.all([
-    resolveWorkspaceProjectSkills(deps, {
-      hostId: args.environment.hostId,
-      workspacePath,
-    }),
-    readWorkspaceAgentInstructions(deps, {
-      hostId: args.environment.hostId,
-      workspacePath,
-    }),
-  ]);
+  const [projectSkillSources, sharedSkills, workspaceAgentInstructions] =
+    await Promise.all([
+      resolveWorkspaceProjectSkills(deps, {
+        hostId: args.environment.hostId,
+        workspacePath,
+      }),
+      resolveSharedSkills(deps, {
+        hostId: args.environment.hostId,
+        cwd: workspacePath,
+      }),
+      readWorkspaceAgentInstructions(deps, {
+        hostId: args.environment.hostId,
+        workspacePath,
+      }),
+    ]);
   const pluginSkillRoots = getPluginSkillRootContributions();
   const skillIdsByPlugin = discoverPluginSkillIds(deps.logger, {
     pluginSkillRoots,
@@ -213,9 +221,20 @@ export async function resolveThreadRuntimeCommandConfig(
         branchName: environment.branchName,
       },
       host: { id: host.id, name: host.name },
-      provider: { id: args.thread.providerId, model: args.model },
+      provider: {
+        id: args.thread.providerId,
+        model: args.model,
+        capabilities: {
+          // Absent registration (an ACP tier id, or a provider whose plugin
+          // is disabled mid-thread) reads as "no native affordance", which is
+          // the safe answer: the plugin contributes its own.
+          supportsNativeUserQuestion:
+            deps.providerRegistry.get(args.thread.providerId)?.info.capabilities
+              .supportsNativeUserQuestion ?? false,
+        },
+      },
       origin: {
-        kind: args.thread.originKind ?? args.thread.childOrigin,
+        kind: args.thread.originKind,
         pluginId: args.thread.originPluginId,
       },
     },
@@ -223,6 +242,7 @@ export async function resolveThreadRuntimeCommandConfig(
   });
   const injectedSkillSources = resolveSkillCatalogSources(deps, {
     projectSkillSources,
+    sharedSkillSources: sharedSkills.runtimeSources,
     pluginSkillSelections: conditionalConfiguration.selectedSkillIdsByPlugin,
   });
   const dataDirAgentInstructions = readDataDirAgentInstructions(

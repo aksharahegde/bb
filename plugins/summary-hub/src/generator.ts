@@ -1,4 +1,4 @@
-import type { BbPluginApi } from "@bb/plugin-sdk";
+import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import { collectDecisions } from "./collectors/decisions.js";
 import { collectGitCommits } from "./collectors/git.js";
 import { collectTasks } from "./collectors/tasks.js";

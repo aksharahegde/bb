@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRpc } from "@bb/plugin-sdk/app";
+import { useRpc } from "@get-bb/plugin-sdk/app";
 import { toast } from "sonner";
 import { Button } from "@bb/shared-ui/button";
 import {

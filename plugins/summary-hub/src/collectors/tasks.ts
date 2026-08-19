@@ -1,4 +1,4 @@
-import type { BbPluginApi } from "@bb/plugin-sdk";
+import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import { hostFileArgs, resolveProjectSource } from "../project-source.js";
 import type { CollectedTask } from "../types.js";
 

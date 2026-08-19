@@ -1,4 +1,4 @@
-import type { BbPluginApi } from "@bb/plugin-sdk";
+import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import type { SourceBundle, SynthesisPayload } from "./types.js";
 
 const SYNTHESIS_PROMPT = `Analyze the attached git commit messages, resolved task items, logged ADRs, and agent thread transcripts. Produce a concise, high-signal summary. Avoid repeating raw commit messages verbatim; instead, group work into logical feature deliverables, architectural choices, and unresolved blockers.

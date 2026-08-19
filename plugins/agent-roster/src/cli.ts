@@ -1,4 +1,4 @@
-import type { BbPluginApi, PluginCliContext, PluginCliResult } from "@bb/plugin-sdk";
+import type { BbPluginApi, PluginCliContext, PluginCliResult } from "@get-bb/plugin-sdk";
 import { extractSplits, layoutFromSplits } from "./layout-editor.js";
 import { RosterStore } from "./store.js";
 import { DEFAULT_OFFICE_LAYOUT } from "./spatial.js";

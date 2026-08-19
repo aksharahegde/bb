@@ -2,7 +2,7 @@ import {
   defineRpcContract,
   type BbPluginApi,
   type PluginAgentToolResult,
-} from "@bb/plugin-sdk";
+} from "@get-bb/plugin-sdk";
 import { z } from "zod";
 import { registerDecisionsCli } from "./src/cli.js";
 import { DecisionStore } from "./src/store.js";

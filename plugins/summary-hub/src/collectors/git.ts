@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import type { BbPluginApi } from "@bb/plugin-sdk";
+import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import type { ProjectSource } from "../project-source.js";
 import type { GitCommitEntry } from "../types.js";
 

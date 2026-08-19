@@ -2,7 +2,7 @@ import { Suspense, lazy } from "react";
 import {
   definePluginApp,
   type PluginNavPanelProps,
-} from "@bb/plugin-sdk/app";
+} from "@get-bb/plugin-sdk/app";
 
 const AgentRosterPanel = lazy(async () => {
   const module = await import("./src/panel/AgentRosterPanel.js");

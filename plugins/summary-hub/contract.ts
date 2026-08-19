@@ -1,4 +1,4 @@
-import { defineRpcContract } from "@bb/plugin-sdk";
+import { defineRpcContract } from "@get-bb/plugin-sdk";
 import { z } from "zod";
 import { SUMMARY_PERIODS, SUMMARY_SCOPES, summaryRecordSchema } from "./src/types.js";
 

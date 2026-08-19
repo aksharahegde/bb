@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { computeCollaborationGroups } from "./collaboration.js";
-import type { BbPluginApi } from "@bb/plugin-sdk";
+import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import type { RosterAgent } from "./types.js";
 
 function makeAgent(
